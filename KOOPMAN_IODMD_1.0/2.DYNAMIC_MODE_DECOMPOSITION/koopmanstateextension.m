@@ -7,16 +7,16 @@ steadyu=u(:,100:204);
 steadyv=v(:,100:204);
 steadyw=w(:,100:204);
 
- for i=1:size(steadyu,1)
+for i=1:size(steadyu,1)
     meanu(i)=mean(steadyu(i,:));
     meanv(i)=mean(steadyv(i,:));
     meanw(i)=mean(steadyw(i,:));
- end
-     
-    meanu=meanu';
-    meanv=meanv';
-    meanw=meanw';
-    
+end
+
+meanu=meanu';
+meanv=meanv';
+meanw=meanw';
+
 for l=1:size(u,2)
     detu(:,l)=u(:,l)-meanu;
     detv(:,l)=v(:,l)-meanv;
@@ -24,10 +24,10 @@ for l=1:size(u,2)
 end
 
 % RANS
-    uv=-detu.*detv*rho;
-    
-    absveldet=detu.^2+detv.^2+detw.^2;
-    absveldet=detu.^2+detv.^2+detw.^2;
+uv=-detu.*detv*rho;
+
+absveldet=detu.^2+detv.^2+detw.^2;
+absveldet=detu.^2+detv.^2+detw.^2;
 
 %% Declare Non Linear Observables for states extension
 nonlobs=absvel;

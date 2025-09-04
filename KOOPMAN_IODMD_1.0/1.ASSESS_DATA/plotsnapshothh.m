@@ -1,6 +1,12 @@
 function []=plotsnapshothh(states,xx,yy,yawanglers, D, i,X,Y,Z,Uups,Xm_sh,Ym_sh,pitchmode)
+if nargin <13
+    pitchmode = 1;
+end
 
-    UmeanAbs_sh_u = reshape(double(real(states(:,i))),Y,X,Z);
+  tmp = double(real(states(:,i)));
+        tmp_resample = resample(tmp,(X*Y*Z),numel(tmp));
+
+    UmeanAbs_sh_u = reshape(tmp_resample,Y,X,Z);
     [Xm_shs,Ym_shs] = meshgrid(xx-500,(yy-500));
     k=9; 
     Usecu=UmeanAbs_sh_u(:,:,k);

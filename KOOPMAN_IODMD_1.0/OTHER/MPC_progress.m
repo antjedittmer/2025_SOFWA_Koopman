@@ -6,8 +6,8 @@ function [f]= MPC_progress(part,subpart,f,si,r)
             f = waitbar(0,' '); 
             titleHandle = get(findobj(f,'Type','axes'),'Title');
             set(titleHandle,'FontSize',15)
-            set(findall(f),'Units', 'normalized');
-            set(f,'Position', [0.2 0.5 0.6 0.1]);
+            %set(findall(f),'Units', 'normalized');
+            %set(f,'Position', [0.2 0.5 0.6 0.1]);
             waitbar(0,f,'(0/6) Initialising Program'); 
         elseif subpart==2    
             waitbar(1/7*0.5,f,'(0/6) Initialising Program: (1/2) Defining Directories'); 

@@ -33,9 +33,9 @@ end
 % Construct the H bar matrix
 %==================
 if q==1 & l==1
-    Ru=zeros(Hp,Hp);
+    Ru = zeros(Hp,Hp);
     for i = 1:Hp
-        Ru=Ru+diag(RRR(i,1)*ones(Hp-i+1,1),-i+1);
+        Ru =Ru+diag(RRR(i,1)*ones(Hp-i+1,1),-i+1);
     end
 else
     Ru=[];
@@ -47,9 +47,9 @@ end
 % Reduce dimension of Ru, in case of Hc < Hp:
 Ru = Ru(:,1:Hc*q);
 
-%Fetch H bar
-Hbar=Ru;
-Ht=Hbar(Hp*l-1:end,:);
+% Fetch H bar
+Hbar = Ru;
+Ht = Hbar(Hp*l-1:end,:);
 
 %==================
 % Construct the Tau matrix
@@ -75,8 +75,8 @@ time=ti:tstep:tf;
      Pref(b,1)=Pref_wt(b,1)+Pref_wt(b,2);
  end
 
-%generate total windfarm power reference directly
-%Pref(:,1) = [0; -0.1*ones(300,1); 0.8*ones(400+Hp+1,1)]/scalingfactors(1);
+% generate total windfarm power reference directly
+% Pref(:,1) = [0; -0.1*ones(300,1); 0.8*ones(400+Hp+1,1)]/scalingfactors(1);
 
 F=zeros(Hp, Hp*l);
 for o=1:Hp
@@ -133,7 +133,7 @@ end
 %% Compute tracking error
 
 %% Graphical visualisation
-maxd=length(predictedpower);
+maxd = min(length(time),length(predictedpower));
  
 %% Evaluate Turbine power tracking performance
 figure600=figure;
@@ -204,7 +204,7 @@ shg
 figure601=figure;
 set(gcf,'color','w','Position', get(0, 'Screensize'),'Visible','off');
 subplot(2,1,1)
-p3=plot(time(1:maxd),u(1:end),'LineWidth',1.6'); %1
+p3=plot(time(1:maxd),u(1:maxd),'LineWidth',1.6'); %1
 p3.Color=[0.8500, 0.3250, 0.0980];
 ylabel('\gamma [º]')
 title('Optimal control action for generator power tracking');
@@ -212,7 +212,7 @@ grid on
 set(gca,'fontsize', 12)
 
 subplot(2,1,2)
-deltau=diff(u);
+deltau = diff(u(1:maxd));
 p4=plot(time(2:maxd),deltau,'LineWidth',1.6'); %1
 p4.Color=[0.8500, 0.3250, 0.0980];
 ylabel('\Delta \gamma [º s^{-1}]');

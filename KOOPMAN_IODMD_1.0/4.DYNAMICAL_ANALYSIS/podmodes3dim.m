@@ -45,12 +45,16 @@ end
  damping=sorteddamping;
 
 %% MODE SELECTION AND RESHPAING
-phistates=phi;
+phistates = phi;
 close all
 
     for i=1:size(phistates,2)
        % part=4; subpart=3; [f]= MPC_progress(part,subpart,f,i,size(phistates,2));
-        phiunique{i}=reshape(real(phistates(:,i)), Y,X,Z);
+
+        tmp = real(phistates(:,i));
+        tmp_resample = resample(tmp,(X*Y*Z),numel(tmp));
+
+        phiunique{i} = reshape(tmp_resample, Y,X,Z);
 
         fig580= figure('Units', 'pixels', 'pos', [75 75 1155 650],'color','white','Visible', 'off');
         set(gcf,'color','w','Position', get(0, 'Screensize'));    

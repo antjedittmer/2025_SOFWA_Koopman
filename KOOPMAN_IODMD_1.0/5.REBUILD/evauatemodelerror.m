@@ -1,4 +1,4 @@
-function []=evauatemodelerror(states, statesrebuild,D,dirdmd,filename,dirName,x,y,z,Decimate)
+function []=evauatemodelerror(states, statesrebuild,D,dirdmd,filename,dirName,x,y,z,Decimate,pitchmode)
 
  n=1;
     cases = dirName;
@@ -21,13 +21,16 @@ function []=evauatemodelerror(states, statesrebuild,D,dirdmd,filename,dirName,x,
     for i=1:size(delta,1)
         taerror(i)=mean(delta(i,:));
     end
-    taerror=taerror';
+    taerror = taerror';
+
+     tmp = taerror;
+     tmp_resample = resample(tmp,(X*Y*Z),numel(tmp));
     
     fig503= figure('Units', 'pixels', 'pos', [75 75 1155 650],'color','white','Visible', 'off');
     set(gcf,'color','w','Position', get(0, 'Screensize')); 
     
     fig503.Visible='off';
-    UmeanAbs_sh_u = reshape(taerror,Y,X,Z);
+    UmeanAbs_sh_u = reshape(tmp_resample,Y,X,Z); %UmeanAbs_sh_u = reshape(taerror,Y,X,Z);
     [Xm_shs,Ym_shs] = meshgrid(xx-500,(yy-500));
     k=9; 
     Usecu=UmeanAbs_sh_u(:,:,k);
@@ -118,10 +121,10 @@ function []=evauatemodelerror(states, statesrebuild,D,dirdmd,filename,dirName,x,
     
     i=470;
     subplot(3,1,1)
-    plotsnapshothh(states,xx,yy,yawanglers, D, i,X,Y,Z,Uups,Xm_sh,Ym_sh)
+    plotsnapshothh(states,xx,yy,yawanglers, D, i,X,Y,Z,Uups,Xm_sh,Ym_sh,pitchmode)
     
     subplot(3,1,2)
-    plotsnapshothh(statesrebuild,xx,yy,yawanglers, D, i,X,Y,Z,Uups,Xm_sh,Ym_sh)
+    plotsnapshothh(statesrebuild,xx,yy,yawanglers, D, i,X,Y,Z,Uups,Xm_sh,Ym_sh,pitchmode)
     
     subplot(3,1,3)
     plotsnapshothhdeviation(delta,xx,yy,yawanglers, D, i,X,Y,Z,Uups,Xm_sh,Ym_sh)
