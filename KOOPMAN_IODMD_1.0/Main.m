@@ -36,6 +36,8 @@
 % (2.2) U_data_complete_vec_val
 
 %% (0) INITIALISE
+tic
+
 restoredefaultpath;
 
 addpath('./1.ASSESS_DATA','./2.DYNAMIC_MODE_DECOMPOSITION','./3.VALIDATION','./4.DYNAMICAL_ANALYSIS','./5.REBUILD','./6.MODEL_PC','OTHER');
@@ -64,14 +66,14 @@ end
 
 detrendingstates=0; %1 to take mean flow and consider turbulent fluctuations
 method=3; %0: DMD ; 1:DMDc; 2:IODMD; 3:EIODMD
-koopman=0; %to add deterministic states to flow field data
+koopman=1; %to add deterministic states to flow field data
 videos=0; %generate videos
 snapshots=0; %generate snapshots from simulation data
 
 subpart=3; [f]= MPC_progress(part,subpart,f,{},{});
 
 % Turbine and flow characteristics to be used
-rho=1.225; %air density in [kg m^-3]
+rho =1.225; %air density in [kg m^-3]
 D=178; %Rotor Diameter used in simulations: 178 [m]
 
 dt=2; %time sampling
@@ -80,7 +82,7 @@ dt=2; %time sampling
 %% (1) ASSESS DATA
 part=1; subpart=1; [f]= MPC_progress(part,subpart,f,{},{});
 
- subpart=2; [f]= MPC_progress(part,subpart,f,{},{});
+subpart=2; [f]= MPC_progress(part,subpart,f,{},{});
 if pitchmode==0 %wake redirection control using nacelle yaw angle
     analysis='YAW_MPC_offset_test'; %name of directory to be created to automatically store results
     filename='yaw_control/U_data_complete_vec_yaw_off.mat'; %directory for matlab file with flow field identification data set
@@ -90,8 +92,14 @@ if pitchmode==0 %wake redirection control using nacelle yaw angle
 
     %for not using all grid points and only part of them (example,
     %only between first and second turbine)
-    [xxx,yyy,zzz,XX,YY,ZZ,QQ_u] = retakepoints(QQ_u,x,y,z,Decimate);
+    [~,~,~,~,~,~,QQ_u] = retakepoints(QQ_u,x,y,z,Decimate);
     [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_u] = retakepoints(valid.QQ_u,x,y,z,Decimate);
+
+    [~,~,~,~,~,~,QQ_v] = retakepoints(QQ_v,x,y,z,Decimate);
+    [~,~,~,~,~,~,QQ_w] = retakepoints(QQ_w,x,y,z,Decimate);
+   
+    [~,~,~,~,~,~,valid.QQ_v] = retakepoints(valid.QQ_v,x,y,z,Decimate);
+    [~,~,~,~,~,~,valid.QQ_w] = retakepoints(valid.QQ_w,x,y,z,Decimate);
 
     %easy solution to augment u flow field data matricx with other flow
     %field data
@@ -109,8 +117,8 @@ elseif pitchmode==1 %collective pitch control was used
     [xxx,yyy,zzz,XX,YY,ZZ,QQ_u] = retakepoints(QQ_u,x,y,z,Decimate);
     [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_u] = retakepoints(valid.QQ_u,x,y,z,Decimate);
 
-    [xxx,yyy,zzz,XX,YY,ZZ,QQ_w]=retakepoints(QQ_w,x,y,z,Decimate);
-    [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_w]=retakepoints(valid.QQ_w,x,y,z,Decimate);
+    [xxx,yyy,zzz,XX,YY,ZZ,QQ_w] = retakepoints(QQ_w,x,y,z,Decimate);
+    [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_w] = retakepoints(valid.QQ_w,x,y,z,Decimate);
 
     %easy solution to augment u flow field data matricx with other flow
     %field data instead of using koopmanextension function
@@ -167,6 +175,8 @@ if snapshots==1
 else
 end
 
+toc
+
 %% (2) DYNAMIC MODE DECOMPOSITION
 part=2; subpart=1; [f]= MPC_progress(part,subpart,f,{},{});
 
@@ -177,13 +187,13 @@ beg=(10001-itsf)/10; %instant to begin defined according to length of data
 
 subpart=2; [f]= MPC_progress(part,subpart,f,{},{});
 % Read and process identification data
-[rotSpeed, nacelleYaw, time1,rotorAzimuth,pitch,powerGenerator]=readdmdinformation(dirName); %read information from simulation
-[Inputs, Outputs, Deterministic,scalingfactors]=preprocessdmdid(beg, rotSpeed,time1,rotorAzimuth,nacelleYaw, pitchmode,pitch,powerGenerator,rho ); %preprocess information (resample, and maintain only relevant data)
+[rotSpeed, nacelleYaw, time1,rotorAzimuth,pitch,powerGenerator] = readdmdinformation(dirName); %read information from simulation
+[Inputs, Outputs, Deterministic,scalingfactors] = preprocessdmdid(beg, rotSpeed,time1,rotorAzimuth,nacelleYaw, pitchmode,pitch,powerGenerator,rho ); %preprocess information (resample, and maintain only relevant data)
 
 subpart=3; [f]= MPC_progress(part,subpart,f,{},{});
 % Read and process validation data
-[rotSpeed_val, nacelleYaw_val, time1_val,rotorAzimuth_val,pitch_val,powerGenerator_val]=readdmdinformation(dirName_val); %read information from simulation
-[Inputs_val, Outputs_val, Deterministic_val]=preprocessdmdval(beg, rotSpeed_val,time1_val,rotorAzimuth_val,nacelleYaw_val,pitchmode,pitch_val,scalingfactors,powerGenerator_val,rho); %preprocess information (resample and only relevant data)
+[rotSpeed_val, nacelleYaw_val, time1_val,rotorAzimuth_val,pitch_val,powerGenerator_val] = readdmdinformation(dirName_val); %read information from simulation
+[Inputs_val, Outputs_val, Deterministic_val] = preprocessdmdval(beg, rotSpeed_val,time1_val,rotorAzimuth_val,nacelleYaw_val,pitchmode,pitch_val,scalingfactors,powerGenerator_val,rho); %preprocess information (resample and only relevant data)
 
 % Define states to be used for DMD
 %states=QQ_u(:,(begin-beg)+1:end); % define states: first hypothesis
@@ -193,7 +203,7 @@ n=size(states,1);
 
 subpart=4; [f]= MPC_progress(part,subpart,f,{},{});
 if detrendingstates
-    [states,meansteadystate,scalingfactor]=preprocessstates(states); %remove meanflow or other pre processing techniques to experiment
+    [states,meansteadystate,scalingfactor] = preprocessstates(states); %remove meanflow or other pre processing techniques to experiment
     %  [statesvalid,meansteadystate,scalingfactor]=preprocessstates(statesvalid);
 else
 end
@@ -201,7 +211,18 @@ end
 %include non linear observables - Koopman extensions to better recover non linear dynamics
 if koopman
     [nonlobs]=koopmanstateextension(double(QQ_u), double(QQ_v), double(QQ_w),rho);
-    states=[nonlobs];
+    states=[states;nonlobs(:,(itsf-1)*0.1:end)];
+
+    statesvalid_u = valid.QQ_u(:,(itsf-1)*0.1:end);
+    statesvalid_v = valid.QQ_v(:,(itsf-1)*0.1:end); %fluid flow as states, identification data set
+    statesvalid_w = valid.QQ_w(:,(itsf-1)*0.1:end);
+    % Deterministic_val = [Ur1(tval:end); Ur2(tval:end)];
+    % nonlobsvalid = koopmanstateextension(statesvalid_u, statesvalid_v, statesvalid_w, rho,Deterministic_val); %sqrt(states_u.^2 + states_v.^2).^3;
+    nonlobsvalid1 = koopmanstateextension(statesvalid_u, statesvalid_v, statesvalid_w, rho);
+    statesvalid = [ statesvalid; nonlobsvalid1 ];% [statesvalid_u; statesvalid_u.^2; statesvalid_u.^3;nonlobs1];% nonlobsvalid1]; % statesvalid_u.^3]; %[statesvalid_u; nonlobsvalid1]; %nonlobsvalid; states_u.^3 statesvalid_u;  states_u.^3;  states_u.^2; ;states_u.^
+
+
+
 else
 end
 
@@ -232,7 +253,7 @@ if detrendingstates
         'dirdmd','method','meansteadystate','scalingfactor','x','y','z',...
         'D','xstates','xstatesvalid','n','Decimate','states','statesvalid');
 else
-    save(strcat(dirdmd,'/RESULTS.mat'),'sys_red',...
+    save(strcat(dirdmd,'/RESULTS_koop.mat'),'sys_red',...
         'X','X_p','Xd','Inputs','Outputs','Deterministic','Inputs_val',...
         'Outputs_val','Deterministic_val','U','S','V','dt','r',...
         'dirdmd','method','x','y','z','D','xstates',...

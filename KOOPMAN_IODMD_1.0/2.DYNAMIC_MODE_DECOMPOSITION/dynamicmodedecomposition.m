@@ -1,4 +1,4 @@
-function [sys_red,FITje,U,S,V,method,X,X_p,Xd,dirdmd,x]=dynamicmodedecomposition(states, Inputs, Outputs, Deterministic ,method,r,maindir,f,dt)
+function [sys_red,FITje,U,S,V,method,X,X_p,Xd,dirdmd,x] = dynamicmodedecomposition(states, Inputs, Outputs, Deterministic ,method,r,maindir,f,dt,plotView,plotOn)
 
 %Def: This function aims to build a reduced order model from the states,
 % input/output information and deterministic states gathered in the
@@ -238,7 +238,7 @@ elseif method==2 %ioDMD
 % 
 %         sys_red{si}=nss;
 
-        [FITje,OMEGA,DAMPING,fig1,x]=evaluatemodel(sys_red,si,Inputs,Outputs,FITje,OMEGA,DAMPING,'identification',x,states,U,Deterministic,method);
+        [FITje,OMEGA,DAMPING,fig1,x] = evaluatemodel(sys_red,si,Inputs,Outputs,FITje,OMEGA,DAMPING,'identification',x,states,U,Deterministic,method);
         warning off
         %export_fig(fig1,strcat(dirdmdident,'/image',num2str(10000+si)),'-nocrop','-m2')
         print2eps(strcat(dirdmdident,'/image',num2str(10000+si)),fig1)
@@ -303,18 +303,21 @@ elseif method==3
         sys_red{si}=ss(A{si},B{si},C{si},D{si},2);
          
         %same as before   
-        [FITje,OMEGA,DAMPING,fig1,x]=evaluatemodel(sys_red,si,Inputs,Outputs,FITje,OMEGA,DAMPING,'identification',x,states,U,Deterministic,method);
-        warning off
-        export_fig(fig1,strcat(dirdmdident,'/image',num2str(10000+si)),'-nocrop','-m2')
-        warning on
+        [FITje,OMEGA,DAMPING,fig1,x] = evaluatemodel(sys_red,si,Inputs,Outputs,FITje,OMEGA,DAMPING,'identification',x,states,U,Deterministic,method,plotView,plotOn);
+        if ~isempty(fig1)
+            warning off
+            export_fig(fig1,strcat(dirdmdident,'/image',num2str(10000+si)),'-nocrop','-m2')
+            warning on
+        end
         close all
     end
-        
-    [fig200]=VAFpermodes(FITje,r,{});
-    warning off
-    export_fig(fig200,strcat(dirdmdident,'/image',num2str(1000+length(sys_red)+1)),'-nocrop','-m2')
-    warning on
-           
+     
+    if plotOn
+        [fig200] = VAFpermodes(FITje,r,{},plotView);
+        warning off
+        export_fig(fig200,strcat(dirdmdident,'/image',num2str(1000+length(sys_red)+1)),'-nocrop','-m2')
+        warning on
+    end
     
 elseif method==4
     %% Professor Wingerden Least Square Solution for state space problem
