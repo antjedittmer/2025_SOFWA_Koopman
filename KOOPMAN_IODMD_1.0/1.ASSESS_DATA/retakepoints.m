@@ -1,13 +1,13 @@
-function [xxx,yyy,zzz,XX,YY,ZZ,flowreshaped]=retakepoints(flow,x,y,z,Decimate)
+function [xxx,yyy,zzz,XX,YY,ZZ,flowreshaped] = retakepoints(flow,x,y,z,Decimate)
 
 [xx,yy,zz]=resamplegrid(x,y,z, Decimate);
 X = length(xx);
 Y = length(yy);
 Z = length(zz);
 
-yyy=yy(1:1:end-1); %yaw
-xxx=xx(1:1:end-55); %yaw
-zzz=zz(1:1:23); %yaw
+yyy = yy(1:1:end-1); %yaw
+xxx = xx(1:1:end-55); %yaw
+zzz = zz(1:1:23); %yaw
 
 % yyy=yy(4:1:end-2); %pitch
 % xxx=xx(1:1:end-55); %pitch
@@ -30,6 +30,3 @@ ZZ=length(zzz);
 %     Reconstructedflow=UmeanAbs_sh_u{t}(4:1:end-2,1:1:end-55,1:1:23);
 %     flowreshaped(:,t)=reshape(Reconstructedflow,[XX*YY*ZZ,1]);
 % end
-
-
-
