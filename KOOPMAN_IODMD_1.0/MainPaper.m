@@ -249,6 +249,8 @@ for idx = 1: length(koopmanVec)
 
     plotStruct{idx}.a = a;
     plotStruct{idx}.a1 = a1;
+    plotStruct{idx}.noState = size(states,1);
+    plotStruct{idx}.noStateVAF = b;
     plotStruct{idx}.legStrAllId =  sprintf('%s; %s; Id VAF P(T1)/P(T2):%2.2f%%/%2.2f%%', strRetake,strKoop,a1Id,aId);
     plotStruct{idx}.legStrAll =  sprintf('%s; %s; VAF P(T1)/P(T2):%2.2f%%/%2.2f%%', strRetake,strKoop,a1,a);
     plotStruct{idx}.legStr1 =  sprintf('%s; %s; VAF P(T1):%2.2f%%', strRetake,strKoop,a1);
@@ -268,9 +270,9 @@ end
 fid = fopen(['VAF_retake_',num2str(retakePoint),'.txt'],'w');
 %fprintf(fid,'No K.\t PT1(Id)\t PT1(Val)\t PT2(Id)\t PT2(Val)\t FT1(Id)\t FT1(Val)\t\t FT2(Id)\t FT2(Val)\n');
 
-fprintf(fid,'Data subset & Lifting functions & VAF(P_1) & VAF(P_2)\n');
+fprintf(fid,'Data subset & Lifting functions & States \\zeta & Selected States \\tilde{\\zeta} & VAF(P_1) & VAF(P_2)\n');
 
-for idx = 1: length(plotStruct)
+for idx = 1 : length(plotStruct)
     % fprintf('%s\n',plotStruct{idx}.legStrAllId);
     % fprintf('%s\n',plotStruct{idx}.legStrAll);
 
@@ -278,8 +280,8 @@ for idx = 1: length(plotStruct)
     aStructCell = regexp(aStruct.legStrAll,';','split');
     matches = regexp(aStruct.legStrAllId, '(\d+\.\d+)(?=%)', 'match');
     vaf_values = str2double(matches);
-    fprintf(fid,'%s & %s & %2.2f\\ & %2.2f\\%% \\\\ \n', aStructCell{1},aStructCell{2},aStruct.a1,aStruct.a);
-
+    fprintf(fid, '%s & %s &  %d & %d & %2.2f\\ & %2.2f\\%% \n', aStructCell{1}, aStructCell{2}, ... 
+        aStruct.noState, aStruct.noStateVAF, aStruct.a1, aStruct.a);
 
 end
 fclose(fid);
