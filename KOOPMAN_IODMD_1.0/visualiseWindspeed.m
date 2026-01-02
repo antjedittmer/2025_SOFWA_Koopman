@@ -1,8 +1,9 @@
 close all;
 
 if exist('QQ_u','var') ~= 1
-    filename='yaw_control/U_data_complete_vec_yaw_off.mat'; %directory for matlab file with flow field identification data set
-    load(filename);
+    parentDir = fileparts(pwd);
+    filename = 'data/yaw_control/U_data_complete_vec_yaw_off.mat'; %directory for matlab file with flow field identification data set
+    load(fullfile(parentDir,filename));
 end
 
 figDir = fullfile(pwd,'figDir');
