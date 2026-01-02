@@ -39,7 +39,8 @@ for sidx = 1:3 % length(plotStruct)
 
 end
 
-load('simAll1_plotStruct.mat','plotStruct');
+%load('simAll1_plotStruct.mat','plotStruct');
+load('simAll1_plotStruct_resampledOriginal.mat','plotStruct');
 nleg = length(leg);
 
 cl1 = {[1,0,0]; 0*[1,1,1]; [1,0,1]};

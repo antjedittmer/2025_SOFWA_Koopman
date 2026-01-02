@@ -99,18 +99,17 @@ end
 %
 % %easy solution to augment u flow field data matricx with other flow
 % %field data instead of using koopmanextension function
-QQ_u1 = [double(QQ_u1);double(QQ_v1)]; %double(QQ_w1)
-valid.QQ_u1 = [double(valid.QQ_u1);double(valid.QQ_v1)]; %double(valid.QQ_w1) %perform same
+% QQ_u1 = [double(QQ_u1);double(QQ_v1)]; %double(QQ_w1)
+% valid.QQ_u1 = [double(valid.QQ_u1);double(valid.QQ_v1)]; %double(valid.QQ_w1) %perform same
 
 maindir = strcat(maindir,analysis);  %define main directory
 %%
 
 %% (2) DYNAMIC MODE DECOMPOSITION
 
-
 % Process validation data
-[Inputs, Outputs, Deterministic,scalingfactors] = preprocessdmdid(beg, rotSpeed,time1,rotorAzimuth,nacelleYaw, pitchmode,pitch,powerGenerator,rho ); %preprocess information (resample, and maintain only relevant data)
-[Inputs_val, Outputs_val, Deterministic_val] = preprocessdmdval(beg, rotSpeed_val,time1_val,rotorAzimuth_val,nacelleYaw_val,pitchmode,pitch_val,scalingfactors,powerGenerator_val,rho); %preprocess information (resample and only relevant data)
+[Inputs, Outputs, Deterministic,scalingfactors,meanvalues] = preprocessdmdid(beg, rotSpeed,time1,rotorAzimuth,nacelleYaw, pitchmode,pitch,powerGenerator,rho); %preprocess information (resample, and maintain only relevant data)
+[Inputs_val, Outputs_val, Deterministic_val] = preprocessdmdval(beg, rotSpeed_val,time1_val,rotorAzimuth_val,nacelleYaw_val,pitchmode,pitch_val,scalingfactors,powerGenerator_val,rho,meanvalues); %preprocess information (resample and only relevant data)
 
 if retakePoint == 0
     strRetake = 'All wind meas.';
@@ -118,53 +117,60 @@ else
     strRetake = 'Turbine wind meas.';
 end
 
-%%
+%% Concatenate and detrend states if desired
+    
+% Define states to be used for DMD
+%states=QQ_u1(:,(begin-beg)+1:end); % define states: first hypothesis
+states_u = QQ_u1(:,(itsf-1)*0.1:end); %fluid flow as states, identification data set
+states_v = QQ_v1(:,(itsf-1)*0.1:end); states_w = QQ_w1(:,(itsf-1)*0.1:end);
+states0 = [states_u; states_v; states_w];
+statesvalid_u = valid.QQ_u1(:,(itsf-1)*0.1:end); %fluid flow as states, validaiton data set for comparison
+statesvalid_v = valid.QQ_v1(:,(itsf-1)*0.1:end); %fluid flow as states, identification data set
+statesvalid_w = valid.QQ_v1(:,(itsf-1)*0.1:end);
+statesvalid0 = [statesvalid_u; statesvalid_v; statesvalid_w];
+
+
+if detrendingstates == 1
+    [states1,meansteadystate,scalingfactor] = preprocessstates(states0); %remove meanflow or other pre-processing techniques to experiment
+    [statesvalid1]=preprocessstates(statesvalid0,scalingfactor);
+else
+    states1 = states0;
+    statesvalid1 = statesvalid0;
+end
+
+%% Start loop over
+
+noStateUV = 2/3 * size(states0,1); %u and v selected
 for idx = 1: length(koopmanVec)
-
-    koopman = koopmanVec(idx);
-    % Define states to be used for DMD
-    %states=QQ_u1(:,(begin-beg)+1:end); % define states: first hypothesis
-    states_u = QQ_u1(:,(itsf-1)*0.1:end); %fluid flow as states, identification data set
-    states = states_u;
-    statesvalid_u = valid.QQ_u1(:,(itsf-1)*0.1:end); %fluid flow as states, validaiton data set for comparison
-    n=size(states,1);
-
-    if detrendingstates
-        [states,meansteadystate,scalingfactor]=preprocessstates(states); %remove meanflow or other pre processing techniques to experiment
-        %  [statesvalid,meansteadystate,scalingfactor]=preprocessstates(statesvalid);
-    else
-    end
+    koopman = koopmanVec(idx);  
+    states = states1(1:noStateUV,:);
+    statesvalid = statesvalid1(1:noStateUV,:);
 
     %include non linear observables - Koopman extensions to better recover non linear dynamics
     if koopman > 0
         %[nonlobs]=koopmanstateextension(double(QQ_u1), double(QQ_v1), double(QQ_v1),rho);
         %states=[states;nonlobs(:,(itsf-1)*0.1:end)];
 
-        states_v = QQ_v1(:,(itsf-1)*0.1:end); %fluid flow as states, identification data set
-        states_w = QQ_w1(:,(itsf-1)*0.1:end);
-
-        statesvalid_v = valid.QQ_v1(:,(itsf-1)*0.1:end); %fluid flow as states, identification data set
-        statesvalid_w = valid.QQ_v1(:,(itsf-1)*0.1:end);
         % Deterministic_val = [Ur1(tval:end); Ur2(tval:end)];
         % nonlobsvalid = koopmanstateextension(statesvalid_u, statesvalid_v, statesvalid_w, rho,Deterministic_val); %sqrt(states_u.^2 + states_v.^2).^3;
         %onlobsvalid1 = koopmanstateextension(statesvalid_u, statesvalid_v, statesvalid_w, rho);
         %statesvalid = [ statesvalid; nonlobsvalid1 ];% [statesvalid_u; statesvalid_u.^2; statesvalid_u.^3;nonlobs1];% nonlobsvalid1]; % statesvalid_u.^3]; %[statesvalid_u; nonlobsvalid1]; %nonlobsvalid; states_u.^3 statesvalid_u;  states_u.^3;  states_u.^2; ;states_u.^
 
         if koopman == 1 % linear + quadratic + cubic
-            states = [states_u; states_u.^2;];
-            statesvalid = [statesvalid_u; statesvalid_u.^2;];
+            states = [states1(1:noStateUV,:); states1(1:noStateUV,:).^2];
+            statesvalid = [statesvalid1(1:noStateUV,:); statesvalid1(1:noStateUV,:).^2];
             strKoop = 'Lin. + quad.';
 
         elseif koopman == 2 % linear + cubic
 
-            states= [states_u; statesvalid_u.^3];
-            statesvalid = [statesvalid_u; statesvalid_u.^3];
+            states= [states1(1:noStateUV,:); states1(1:noStateUV,:).^3];
+            statesvalid = [statesvalid(1:noStateUV,:); statesvalid(1:noStateUV,:).^3];
             strKoop = 'Lin. + cubic';
 
 
         elseif koopman == 3 % linear + quadratic + cubic
-            states= [states_u; states_u.^2; statesvalid_u.^3];
-            statesvalid = [statesvalid_u; statesvalid_u.^2;statesvalid_u.^3];
+            states= [states1(1:noStateUV,:); states1(1:noStateUV,:).^2; states1(1:noStateUV,:).^3]; %[states_u; states_u.^2; statesvalid_u.^3];
+            statesvalid = [statesvalid1(1:noStateUV,:); statesvalid1(1:noStateUV,:).^2; statesvalid1(1:noStateUV,:).^3];
             strKoop = 'Lin, quad. + cubic';
 
         elseif koopman == 4

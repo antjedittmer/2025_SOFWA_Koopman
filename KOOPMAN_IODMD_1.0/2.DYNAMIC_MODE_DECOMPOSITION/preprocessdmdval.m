@@ -1,6 +1,7 @@
-function [Inputs, Outputs, Deterministic]=preprocessdmdval(beg, rotSpeed,time1,rotorAzimuth,nacelleYaw,pitchmode, pitch,scalingfactors,powerGenerator,rho)
+function [Inputs, Outputs, Deterministic] = preprocessdmdval(beg, rotSpeed,time1,rotorAzimuth,nacelleYaw,pitchmode, pitch,scalingfactors,powerGenerator,rho,meanvalues)
 
 %% EVALUATE RELEVANT STATES TO BE UED 
+%% DETERMINISTIC STATES
 % X1=detrend(rotSpeed(end-beg*10:1:end,1)');
 % X2=detrend(rotSpeed(end-beg*10:1:end,2)');
 % 
@@ -10,54 +11,33 @@ function [Inputs, Outputs, Deterministic]=preprocessdmdval(beg, rotSpeed,time1,r
 % X2=resample(detrend(rotSpeed(end-750*10:1:end,2)'),1,10);
 % X3=resample(detrend(rotSpeed(end-750*10:1:end,1)'),1,10).^2;
 % X4=resample(detrend(rotSpeed(end-750*10:1:end,2)'),1,10).^2;
- meanX1=7.201;
- X1=rotSpeed(end-beg*10:1:end,1)-meanX1;
- meanX2=3.67;
- X2=rotSpeed(end-beg*10:1:end,2)-meanX2;
+ meanX1 = meanvalues(4); %7.201 -> 6.9939
+ X1temp = (rotSpeed(end-beg*10:1:end,1) - meanX1)/scalingfactors(4);
+ meanX2 = meanvalues(5); %3.67 -> 4.6889
+ X2temp = (rotSpeed(end-beg*10:1:end,2) - meanX2)/scalingfactors(5);
  
- [X1] = resampleedgeeffect(X1,10); 
- [X2] = resampleedgeeffect(X2,10);
+ [X1] = resampleedgeeffect(X1temp,10); 
+ [X2] = resampleedgeeffect(X2temp,10);
+ 
+Deterministic=[X1; X2]; 
 
-X1=X1./scalingfactors(4);
-X2=X2./scalingfactors(5);
 
-%%
-% X3=X1.^2;
-% X4=X2.^2;
 
-%X3=X3./scalingfactors(6);
-%X4=X4./scalingfactors(7);
-
-% X3=resample(rotSpeed(end-beg*10:1:end,1),1,10).^2;
-% X4=resample(rotSpeed(end-beg*10:1:end,2),1,10).^2;
-% X3=X3./var(X3);
-% X4=X4./var(X4);
 
 %% OUTPUTS
 %the rotor speeds of the two turbines are defined as outputs of the wind turbine system 
 %POWER OUTPUT
    % meanY1=5.485*10^6;%pitch 0
-   meanY1=5.352*10^6; %yaw -10
-   %meanY1=mean(powerGenerator(300:500,1));
-   Y1=powerGenerator(end-beg*10:1:end,1)/rho-meanY1;
+   meanY1 = meanvalues(1);% 5.352*10^6; %yaw -10 -> 6.1835e+06   
+   Y1temp = (powerGenerator(end-beg*10:1:end,1) - meanY1)/scalingfactors(1);
     
   % meanY2=0.7728*10^6; %pitch 0
-   meanY2=0.9512*10^6; %yaw -10
+   meanY2 = meanvalues(2); %0.9512*10^6; %yaw -10 -> meanvalues(2)
    %meanY2=mean(powerGenerator(300:500,2));
-   Y2=powerGenerator(end-beg*10:1:end,2)/rho-meanY2;
+   Y2temp = (powerGenerator(end-beg*10:1:end,2) - meanY2)/scalingfactors(2);
 % 
-  [Y1] = resampleedgeeffect(Y1*10^-6,10); %rotor speed of turbine 1 as first output
-  [Y2] = resampleedgeeffect(Y2*10^-6,10);
-
-% Y1=resample(detrend(powerGenerator(end-750*10:1:end,1)*1e-6'),1,10);
-% Y2=resample(detrend(powerGenerator(end-750*10:1:end,2)*1e-6'),1,10);
-% 
- Y1=Y1./scalingfactors(1);
- Y2=Y2./scalingfactors(2);
- 
-%ROTOR SPEED OUTPUT
-% Y1=X1;
-% Y2=X2;
+  [Y1] = resampleedgeeffect(Y1temp,10); %rotor speed of turbine 1 as first output
+  [Y2] = resampleedgeeffect(Y2temp,10);
 
 Outputs=[Y1;Y2];
 
@@ -66,12 +46,9 @@ if pitchmode==0
 
     steadyyaw=260;
     %U1=detrend(nacelleYaw(end-beg*10:1:end,1)');
-    U1=nacelleYaw(end-beg*10:1:end,1)';
-    U1=U1-steadyyaw;
-    [U1] = resampleedgeeffect(U1,10);
-
-    U1=U1./scalingfactors(3);
-
+    nacelleYaw1 = nacelleYaw(end-beg*10:1:end,1)';
+    U1temp = (nacelleYaw1-steadyyaw)/scalingfactors(3);
+    U1 = resampleedgeeffect(U1temp,10);
     Inputs= U1;
 
 elseif pitchmode==1
@@ -129,6 +106,17 @@ elseif pitchmode==1
 end
     
 
-%% DETERMINISTIC STATES
-Deterministic=[X1; X2]; 
-%Deterministic={};
+%%%
+% Y1=resample(detrend(powerGenerator(end-750*10:1:end,1)*1e-6'),1,10);
+% Y2=resample(detrend(powerGenerator(end-750*10:1:end,2)*1e-6'),1,10);
+
+% X3=X1.^2;
+% X4=X2.^2;
+
+%X3=X3./scalingfactors(6);
+%X4=X4./scalingfactors(7);
+
+% X3=resample(rotSpeed(end-beg*10:1:end,1),1,10).^2;
+% X4=resample(rotSpeed(end-beg*10:1:end,2),1,10).^2;
+% X3=X3./var(X3);
+% X4=X4./var(X4);
