@@ -1,4 +1,4 @@
-function [states,meansteadystate,scalingfactor] = preprocessstates(states,scalingfactor)
+function [statesScaled,meansteadystate,scalingfactor] = preprocessstates(states,scalingfactor)
 
 
 n = size(states, 1) / 3;
@@ -18,7 +18,7 @@ if nargin == 1
     scalingfactor = std(V_mag_all(:));
 end
 
-states = states/scalingfactor;
+statesScaled = states/scalingfactor;
 
 %find mean of steady state
 %assuming stady state is from

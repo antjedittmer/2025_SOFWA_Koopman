@@ -30,12 +30,13 @@ elseif pitchmode == 1
 
 end
 
-detrendingstates = 0; %1 to take mean flow and consider turbulent fluctuations
+detrendingstates = 1; %1 to take mean flow and consider turbulent fluctuations
 method = 3; %0: DMD ; 1:DMDc; 2:IODMD; 3:EIODMD
 videos = 0; %generate videos
 snapshots = 0; %generate snapshots from simulation data
 koopmanVec = 0:3; %to add deterministic states to flow field data
-retakePoint = 0;
+retakePoint = 1;
+
 r = 100;
 
 % Turbine and flow characteristics to be used
@@ -139,8 +140,9 @@ else
 end
 
 %% Start loop over
-
-noStateUV = 2/3 * size(states0,1); %u and v selected
+% states1 = Deterministic;
+% statesvalid1 = Deterministic_val;
+noStateUV = 1/3 *size(states1,1); %u and v selected
 for idx = 1: length(koopmanVec)
     koopman = koopmanVec(idx);  
     states = states1(1:noStateUV,:);

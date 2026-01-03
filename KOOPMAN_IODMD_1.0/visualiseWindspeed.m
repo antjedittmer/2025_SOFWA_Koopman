@@ -99,8 +99,6 @@ else
     X = length(xx);
     Z = length(zz);
 
-
-
     Xsel = [1,71];%1:130;%
     Ysel = 7:22;%1:28;%
     Zsel = 10;
@@ -159,7 +157,7 @@ else
     print(fullfile(figDir,[strFig,'_x']), '-depsc');
 
 
-    for idxT = 1: 2
+    for idxT = 1:2
         aSel = Xsel(idxT);
         strIdxT = num2str(idxT);
         UmeanAbs_sh_u2Dcell.T1 = squeeze(UmeanAbs_sh_u(:,aSel,:));
