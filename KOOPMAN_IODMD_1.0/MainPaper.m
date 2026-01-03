@@ -36,13 +36,13 @@ videos = 0; %generate videos
 snapshots = 0; %generate snapshots from simulation data
 koopmanVec = 0:3; %to add deterministic states to flow field data
 retakePoint = 1;
-
 r = 100;
 
 % Turbine and flow characteristics to be used
 rho = 1.225; %air density in [kg m^-3]
 D = 178; %Rotor Diameter used in simulations: 178 [m]
 dt = 2; %time sampling
+maindir = strcat(maindir,analysis);  %define main directory
 
 %% Load the data
 load(filename);
@@ -103,22 +103,7 @@ end
 % QQ_u1 = [double(QQ_u1);double(QQ_v1)]; %double(QQ_w1)
 % valid.QQ_u1 = [double(valid.QQ_u1);double(valid.QQ_v1)]; %double(valid.QQ_w1) %perform same
 
-maindir = strcat(maindir,analysis);  %define main directory
-%%
-
-%% (2) DYNAMIC MODE DECOMPOSITION
-
-% Process validation data
-[Inputs, Outputs, Deterministic,scalingfactors,meanvalues] = preprocessdmdid(beg, rotSpeed,time1,rotorAzimuth,nacelleYaw, pitchmode,pitch,powerGenerator,rho); %preprocess information (resample, and maintain only relevant data)
-[Inputs_val, Outputs_val, Deterministic_val] = preprocessdmdval(beg, rotSpeed_val,time1_val,rotorAzimuth_val,nacelleYaw_val,pitchmode,pitch_val,scalingfactors,powerGenerator_val,rho,meanvalues); %preprocess information (resample and only relevant data)
-
-if retakePoint == 0
-    strRetake = 'All wind meas.';
-else
-    strRetake = 'Turbine wind meas.';
-end
-
-%% Concatenate and detrend states if desired
+%% Concatenate and detrend flow fields/states if desired
     
 % Define states to be used for DMD
 %states=QQ_u1(:,(begin-beg)+1:end); % define states: first hypothesis
@@ -130,13 +115,24 @@ statesvalid_v = valid.QQ_v1(:,(itsf-1)*0.1:end); %fluid flow as states, identifi
 statesvalid_w = valid.QQ_v1(:,(itsf-1)*0.1:end);
 statesvalid0 = [statesvalid_u; statesvalid_v; statesvalid_w];
 
-
 if detrendingstates == 1
     [states1,meansteadystate,scalingfactor] = preprocessstates(states0); %remove meanflow or other pre-processing techniques to experiment
     [statesvalid1]=preprocessstates(statesvalid0,scalingfactor);
 else
     states1 = states0;
     statesvalid1 = statesvalid0;
+end
+
+%% (2) DYNAMIC MODE DECOMPOSITION
+
+% Process validation data
+[Inputs, Outputs, Deterministic,scalingfactors,meanvalues] = preprocessdmdid(beg, rotSpeed,time1,rotorAzimuth,nacelleYaw, pitchmode,pitch,powerGenerator,rho); %preprocess information (resample, and maintain only relevant data)
+[Inputs_val, Outputs_val, Deterministic_val] = preprocessdmdval(beg, rotSpeed_val,time1_val,rotorAzimuth_val,nacelleYaw_val,pitchmode,pitch_val,scalingfactors,powerGenerator_val,rho,meanvalues); %preprocess information (resample and only relevant data)
+
+if retakePoint == 0
+    strRetake = 'All wind meas.';
+else
+    strRetake = 'Turbine wind meas.';
 end
 
 %% Start loop over

@@ -99,7 +99,7 @@ else
     X = length(xx);
     Z = length(zz);
 
-    Xsel = [1,71];%1:130;%
+    Xsel = [1,70];%1:130;%
     Ysel = 7:22;%1:28;%
     Zsel = 10;
 
