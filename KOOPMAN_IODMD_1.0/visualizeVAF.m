@@ -1,9 +1,10 @@
 clc; clear; close
 
-oneFig = 0;
+oneFig = 1;
+matFile0 = 'simAll0_plotStruct_resampledOriginal.mat'; %'simAll0_plotStruct.mat'
+matFile1 = 'simAll1_plotStruct_resampledOriginal.mat'; 
 
-%load('simAll0_plotStruct.mat','plotStruct');
-load('simAll0_plotStruct_resampledOriginal.mat','plotStruct');
+load(matFile0,'plotStruct');
 plotStruct1 = plotStruct;
 
 simPwr = plotStruct{1}.Outputs_val(1,1:end-1) + plotStruct{2}.Outputs_val(2,1:end-1);
@@ -40,7 +41,7 @@ for sidx = 1:3 % length(plotStruct)
 end
 
 %load('simAll1_plotStruct.mat','plotStruct');
-load('simAll1_plotStruct_resampledOriginal.mat','plotStruct');
+load(matFile1,'plotStruct');
 nleg = length(leg);
 
 cl1 = {[1,0,0]; 0*[1,1,1]; [1,0,1]};
@@ -96,7 +97,7 @@ if oneFig == 0
 else
     subplot(5,2,[4,6])
 end
-visualizeVAF2(1,plotStruct1)
+visualizeVAF2(1,plotStruct1,matFile1)
 
 
 if oneFig == 0
@@ -105,7 +106,7 @@ else
     subplot(5,2,[8,10])
 end
 
-visualizeVAF2(2,plotStruct1)
+visualizeVAF2(2,plotStruct1,matFile1)
 xlabel('Time (s)','Fontsize',fs)
 
 

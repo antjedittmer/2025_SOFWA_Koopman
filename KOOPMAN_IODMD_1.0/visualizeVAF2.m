@@ -1,4 +1,4 @@
-function visualizeVAF2(idx0,plotStruct)    
+function visualizeVAF2(idx0,plotStruct,matFile1)    
 
 if ~nargin
     
@@ -6,6 +6,7 @@ if ~nargin
     figure(42)
     legStr = 'legStrAll';
     load('simAll0_plotStruct.mat','plotStruct');
+    matFile1 = 'simAll1_plotStruct_resampledOriginal.mat'; 
 else
     legStr = sprintf('legStr%d',idx0);
 end
@@ -34,7 +35,7 @@ for sidx = 1:3 % length(plotStruct)
 end
 
 %load('simAll1_plotStruct.mat','plotStruct');
-load('simAll1_plotStruct_resampledOriginal.mat','plotStruct');
+load(matFile1,'plotStruct');
 
 nleg = length(leg);
 

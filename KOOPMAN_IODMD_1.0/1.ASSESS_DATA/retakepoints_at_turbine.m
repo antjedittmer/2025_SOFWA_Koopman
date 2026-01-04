@@ -10,8 +10,8 @@ XX = [];
 YY = [];
 ZZ = [];
 if nargin == 5
-    Xsel = [1,70];%1:130;% [1,71];% 
-    Ysel = [7:22];% 1:28;% 9:20; %
+    Xsel = [1,70]; %[1,70]; %; %[1,70];%1:130;% [1,71];% 10,50,
+    Ysel = [4:24];% 1:28;% 9:20; %7:22 % 1:28; %
     Zsel = 10;
 end
 
@@ -59,7 +59,7 @@ if lzSel >0
             vec = (idx-1)*lenSel + (1:lenSel);
             Reconstructedflow(vec) = UmeanAbs_sh_u(Ysel,Xsel(idx),Zsel); % %UmeanAbs_sh_u(1:end-1,1:end-55,1:23);
         end
-        flowreshaped(:,t) = reshape(Reconstructedflow,lVec,1);
+        flowreshaped(:,t) = Reconstructedflow; %reshape(,lVec,1);
     end
 else
     lVec = lxSel*lySel;

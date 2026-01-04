@@ -1,136 +1,96 @@
 close all;
-
 if exist('QQ_u','var') ~= 1
     parentDir = fileparts(pwd);
-    filename = 'data/yaw_control/U_data_complete_vec_yaw_off.mat'; %directory for matlab file with flow field identification data set
+    filename = 'data/yaw_control/U_data_complete_vec_yaw_off.mat'; 
     load(fullfile(parentDir,filename));
 end
 
 figDir = fullfile(pwd,'figDir');
-
 if exist(figDir,'dir') ~= 7
     mkdir(figDir);
 end
 
+% --- Grid Setup ---
 xLen = length(x); yLen = length(y);  zLen = length(z);
-xx = x(1:4:xLen); % vecx;
-yy = y(1:4:yLen); % vecy;
-zz = z(1:4:zLen); % vecz;
+xx = x(1:4:xLen); yy = y(1:4:yLen); zz = z(1:4:zLen); 
+X = length(xx); Y = length(yy); Z = length(zz);
 
-Xsel1 = 1:(length(xx)-55); % For quiver field
-Ysel1 = 1:(length(yy)-1); % 1:28
+% --- Circular Rotor Selection Logic ---
+% Lateral indices 7:22 (center ~14.5), Vertical indices 2:17 (center ~9.5/10)
+y_center = 14; 
+z_center = 10; % Hub height index
+R_rotor = 7.5; % Radius in grid units to cover ~178m diameter
+
+[Y_grid, Z_grid] = meshgrid(1:Y, 1:Z);
+dist_from_hub = sqrt((Y_grid - y_center).^2 + (Z_grid - z_center).^2);
+rotor_mask = dist_from_hub <= R_rotor;
+
+% Define selection indices for visualization
+[Zsel_disk, Ysel_disk] = find(rotor_mask); 
+Xsel = [1, 70]; % Longitudinal locations for Turbine 1 and 2
+
+% Quiver background grid
+Xsel1 = 1:(X-55); 
+Ysel1 = 1:(Y-1); 
 Zsel1 = 1:23;
 
-Y = length(yy);
-X = length(xx);
-Z = length(zz);
+[Xm_shs, Ym_shs, Zm] = meshgrid(xx-500, (yy-500), zz);
+i = 500; % Time sample index
 
-Xsel = [1,70];%1:130;%
-Ysel = 7:22;%1:28;%
-Zsel = 10;
+UmeanAbs_sh_u = reshape(double(QQ_u(:,i)), Y, X, Z);
+UmeanAbs_sh_v = reshape(double(QQ_v(:,i)), Y, X, Z);
+UmeanAbs_sh_w = reshape(double(QQ_w(:,i)), Y, X, Z);
 
-zH = Zsel;
-
-[Xm_shs,Ym_shs,Zm] = meshgrid(xx-500,(yy-500), zz);
-
-i = 500;
-UmeanAbs_sh_u = reshape(double(QQ_u(:,i)),Y,X,Z);
-UmeanAbs_sh_v = reshape(double(QQ_v(:,i)),Y,X,Z);
-UmeanAbs_sh_w = reshape(double(QQ_w(:,i)),Y,X,Z);
-
-% figure;
-% quiver3(Ym_shs,Xm_shs,Zm,UmeanAbs_sh_v,UmeanAbs_sh_u,UmeanAbs_sh_w);
-
+% --- 1. Hub Height Plan View (X-Y Plane) ---
+zH = 10; % Visualize at Hub Height
 UmeanAbs_sh_u2D = UmeanAbs_sh_u(:,:,zH);
 UmeanAbs_sh_v2D = UmeanAbs_sh_v(:,:,zH);
-Xm_shs_2D = Xm_shs(:,:,zH);
-Ym_shs_2D = Ym_shs(:,:,zH);
-Vmean = (UmeanAbs_sh_u2D.^2 + UmeanAbs_sh_v2D.^2).^(1/2);
+Vmean_XY = sqrt(UmeanAbs_sh_u2D.^2 + UmeanAbs_sh_v2D.^2);
 
-
-%% long/lateral wind at hub height
-figure(1); %contourf(Xm_shs_2D,Ym_shs_2D,Vmean,"FaceAlpha",0.25);
-
+figure(1);
 fs = 13;
-contourf(Xm_shs_2D,Ym_shs_2D,Vmean); colormap('sky'); hold on;
-Xm_shs_2D1 = Xm_shs_2D(Ysel1,Xsel1);
-Ym_shs_2D1 = Ym_shs_2D(Ysel1,Xsel1);
-UmeanAbs_sh_u2D1 =  UmeanAbs_sh_u2D(Ysel1,Xsel1);
-UmeanAbs_sh_v2D1 = UmeanAbs_sh_v2D(Ysel1,Xsel1);
-quiver(Xm_shs_2D1,Ym_shs_2D1,UmeanAbs_sh_u2D1,UmeanAbs_sh_v2D1,'k')
+contourf(Xm_shs(:,:,zH), Ym_shs(:,:,zH), Vmean_XY); colormap('sky'); hold on;
+% Plot background flow vectors
+quiver(Xm_shs(Ysel1,Xsel1,zH), Ym_shs(Ysel1,Xsel1,zH), ...
+       UmeanAbs_sh_u2D(Ysel1,Xsel1), UmeanAbs_sh_v2D(Ysel1,Xsel1), 'k');
+% Plot the rotor points (at hub height only for this view)
+Ysel_line = 7:22;
+quiver(Xm_shs(Ysel_line, Xsel, zH), Ym_shs(Ysel_line, Xsel, zH), ...
+       UmeanAbs_sh_u2D(Ysel_line, Xsel), UmeanAbs_sh_v2D(Ysel_line, Xsel), 'r', 'AutoScaleFactor', 0.2);
+xlabel('x (m)'); ylabel('y (m)'); axis equal; colorbar();
+title('Plan View at Hub Height');
 
-posDefault = get(0,'DefaultFigurePosition');
-set(gcf, 'position', [posDefault(1) - posDefault(3)*0.7,posDefault(2),posDefault(3)*3.1,posDefault(4)]);
-xlabel('x (m)','FontSize',fs); ylabel('y (m)','FontSize',fs);
-
-Xm_shs_2Dsel = Xm_shs_2D(Ysel,Xsel);
-Ym_shs_2Dsel = Ym_shs_2D(Ysel,Xsel);
-UmeanAbs_sh_u2Dsel =  UmeanAbs_sh_u2D(Ysel,Xsel);
-UmeanAbs_sh_v2Dsel = UmeanAbs_sh_v2D(Ysel,Xsel);
-
-quiver(Xm_shs_2Dsel,Ym_shs_2Dsel, UmeanAbs_sh_u2Dsel,UmeanAbs_sh_v2Dsel,...
-    'r','AutoScaleFactor',0.2);
-
-legend('Wind contour hub height (m/s)','Wind field data points (m/s)','Wind at turbines data points (m/s)')
-set(findall(gcf,'-property','FontSize'),'FontSize',13.5)
-axis equal;
-
-
-colorbar();drawnow
-
-strFig = 'WindData';
-print(fullfile(figDir,[strFig,'_x']), '-dpng');
-print(fullfile(figDir,[strFig,'_x']), '-depsc');
-
-
+% --- 2. Rotor Disk Cross-Sections (Y-Z Plane) ---
 for idxT = 1:2
     aSel = Xsel(idxT);
-    strIdxT = num2str(idxT);
-    UmeanAbs_sh_u2Dcell.T1 = squeeze(UmeanAbs_sh_u(:,aSel,:));
-    UmeanAbs_sh_v2Dcell.T1 = squeeze(UmeanAbs_sh_v(:,aSel,:));
-    UmeanAbs_sh_w2Dcell.T1 = squeeze(UmeanAbs_sh_w(:,aSel,:));
-    Ym_shs_2Dcell.T1 = squeeze(Ym_shs(:,aSel,:));
-    Zm_shs_2Dcell.T1 = squeeze(Zm(:,aSel,:));
-    Vmeancell.T1 = (UmeanAbs_sh_u2Dcell.T1.^2 + UmeanAbs_sh_v2Dcell.T1.^2 + UmeanAbs_sh_w2Dcell.T1.^2).^(1/2);
-
     figure(idxT + 1);
-    contourf(Ym_shs_2Dcell.T1,Zm_shs_2Dcell.T1,Vmeancell.T1);
-    colormap('sky'); hold on;
+    
+    % Squeeze out the Y-Z plane at the turbine X-location
+    U_plane = squeeze(UmeanAbs_sh_u(:, aSel, :));
+    V_plane = squeeze(UmeanAbs_sh_v(:, aSel, :));
+    W_plane = squeeze(UmeanAbs_sh_w(:, aSel, :));
+    Y_plane = squeeze(Ym_shs(:, aSel, :));
+    Z_plane = squeeze(Zm(:, aSel, :));
+    V_mag = sqrt(U_plane.^2 + V_plane.^2 + W_plane.^2);
+    
+    contourf(Y_plane, Z_plane, V_mag); colormap('sky'); hold on;
+    
+    % Plot background grid vectors
+    quiver(Y_plane(Ysel1, Zsel1), Z_plane(Ysel1, Zsel1), ...
+           V_plane(Ysel1, Zsel1), W_plane(Ysel1, Zsel1), 'k');
+    
+    % Plot the CIRCULAR DISK points in Red
+    for idx2 = 1: length(Zsel_disk)
+        Y_disk = Y_plane(Ysel_disk(idx2), Zsel_disk(idx2));
+        Z_disk = Z_plane(Ysel_disk(idx2), Zsel_disk(idx2));
+        V_disk = V_plane(Ysel_disk(idx2), Zsel_disk(idx2));
+        W_disk = W_plane(Ysel_disk(idx2), Zsel_disk(idx2));
 
-    Ym_shs_2Dcell.T11 = Ym_shs_2Dcell.T1(Ysel1,Zsel1);
-    Zm_shs_2Dcell.T11 = Zm_shs_2Dcell.T1(Ysel1,Zsel1);
-    UmeanAbs_sh_v2Dcell.T11 =  UmeanAbs_sh_v2Dcell.T1(Ysel1,Zsel1);
-    UmeanAbs_sh_w2Dcell.T11 = UmeanAbs_sh_w2Dcell.T1(Ysel1,Zsel1);
+        quiver(Y_disk, Z_disk, V_disk, W_disk, 'r', 'AutoScaleFactor',10);
+     end
 
-    quiver(Ym_shs_2Dcell.T11,Zm_shs_2Dcell.T11,...
-        UmeanAbs_sh_v2Dcell.T11,UmeanAbs_sh_w2Dcell.T11,'k')
-    axis equal;
-
-    Zm_shs_2Dsel_cell.T1 = Zm_shs_2Dcell.T1(Ysel,Zsel);
-    Ym_shs_2Dsel_cell.T1 = Ym_shs_2Dcell.T1(Ysel,Zsel);
-    UmeanAbs_sh_v2Dsel_cell.T1 = UmeanAbs_sh_v2Dcell.T1(Ysel,Zsel);
-    UmeanAbs_sh_w2Dsel_cell.T1 = UmeanAbs_sh_w2Dcell.T1(Ysel,Zsel);
-
-    quiver(Ym_shs_2Dsel_cell.T1,Zm_shs_2Dsel_cell.T1, ...
-        UmeanAbs_sh_v2Dsel_cell.T1,UmeanAbs_sh_w2Dsel_cell.T1,...
-        'r','AutoScaleFactor',0.75);
-    xlabel('y (m)','FontSize',fs); ylabel('z (m)','FontSize',fs);
-    colorbar(); drawnow;
-
-    legend(['Wind contour WT',strIdxT,' (m/s)'],'Wind field data (m/s)', ['Wind at WT',strIdxT,' data (m/s)'])
-    set(findall(gcf,'-property','FontSize'),'FontSize',13.5)
-    axis equal;
-
-    strFig = 'WindData';
-    print(fullfile(figDir,[strFig,'_T',num2str(idxT)]), '-dpng');
-    print(fullfile(figDir,[strFig,'_T',num2str(idxT)]), '-depsc');
-
+    
+    xlabel('y (m)'); ylabel('z (m)'); axis equal; colorbar();
+    legend(['Wind WT', num2str(idxT)], 'Field Data', 'Disk Samples');
+    title(['Rotor Disk Coverage - Turbine ', num2str(idxT)]);
 end
-
-
-%Unused code
-% if length(QQ_u) == 51543
-%     yy = yy(1:1:end-1); %yaw
-%     xx = xx(1:1:end-55); %yaw
-%     zz = zz(1:1:23); %yaw
-% end

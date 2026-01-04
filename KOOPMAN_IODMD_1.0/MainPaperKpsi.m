@@ -14,27 +14,19 @@ DataIn = fullfile(parentdir,'data');
 
 pitchmode = 0; %0 for wake redirection control (yaw) and 1 for axial induction control (pitch)
 
-if pitchmode == 0
-    dirName={[ DataIn,'/yaw_control/steps_yaw_20deg_10offset']}; %directory for identification data, wake redirection control
-    dirName_val={[ DataIn,'/yaw_control/steps_yaw_20deg_10offset_val']}; %directory for validation data, wake redirection control
-    analysis ='YAW_MPC_offset_test'; %name of directory to be created to automatically store results
-    filename ='yaw_control/U_data_complete_vec_yaw_off.mat'; %directory for matlab file with flow field identification data set
-    filenamevalid ='yaw_control/U_data_complete_vec_yaw_off_val.mat'; %directory for matlab file with flow field validation data set
 
-elseif pitchmode == 1
-    dirName={[DataIn,'/pitch_control/steps_theta_col_new']}; %directory for identification data, collective pitch control
-    dirName_val={[DataIn,'/pitch_control/steps_theta_col_new_val']}; %directory for validation data, collective pitch control
-    analysis ='PULSE_MPC/'; % name of directory to be created to automatically store results
-    filename ='pitch_control/U_data_complete_vec_pulse.mat'; %directory for matlab file with flow field identification data set
-    filenamevalid ='pitch_control/U_data_complete_vec_pulse_val.mat'; %directory for matlab file with flow field validation data set
+dirName={[ DataIn,'/yaw_control/steps_yaw_20deg_10offset']}; %directory for identification data, wake redirection control
+dirName_val={[ DataIn,'/yaw_control/steps_yaw_20deg_10offset_val']}; %directory for validation data, wake redirection control
+analysis ='YAW_MPC_offset_test'; %name of directory to be created to automatically store results
+filename ='yaw_control/U_data_complete_vec_yaw_off.mat'; %directory for matlab file with flow field identification data set
+filenamevalid ='yaw_control/U_data_complete_vec_yaw_off_val.mat'; %directory for matlab file with flow field validation data set
 
-end
 
 detrendingstates = 1; %1 to take mean flow and consider turbulent fluctuations
-method = 2; %0: DMD ; 1:DMDc; 2:IODMD; 3:EIODMD
+method = 3; %0: DMD ; 1:DMDc; 2:IODMD; 3:EIODMD
 videos = 0; %generate videos
 snapshots = 0; %generate snapshots from simulation data
-koopmanVec = 0:3; %to add deterministic states to flow field data
+koopmanVec = 3; %to add deterministic states to flow field data
 retakePoint = 1;
 r = 100;
 
@@ -65,13 +57,6 @@ end
 %% Retake points
 
 if retakePoint == 0
-    % QQ_u1 =QQ_u;
-    % QQ_v1 =QQ_v;
-    % QQ_w1 =QQ_w;
-    %
-    % valid.QQ_u1 = valid.QQ_u;
-    % valid.QQ_v1 = valid.QQ_v;
-    % valid.QQ_w1 = valid.QQ_w;
 
     %for not using all grid points and only part of them (example,
     %only between first and second turbine)
@@ -97,7 +82,7 @@ elseif retakePoint == 1
     [~,~,~,~,~,~,valid.QQ_v1] = retakepoints_at_turbine(valid.QQ_v,x,y,z,Decimate);
     [~,~,~,~,~,~,valid.QQ_w1] = retakepoints_at_turbine(valid.QQ_w,x,y,z,Decimate);
 else
-      %for not using all grid points and only part of them (example,
+    %for not using all grid points and only part of them (example,
     %only between first and second turbine)
     [~,~,~,~,~,~,QQ_u1] = retakepoints_at_turbinedisk(QQ_u,x,y,z,Decimate);
     [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_u1] = retakepoints_at_turbinedisk(valid.QQ_u,x,y,z,Decimate);
@@ -115,7 +100,7 @@ end
 % valid.QQ_u1 = [double(valid.QQ_u1);double(valid.QQ_v1)]; %double(valid.QQ_w1) %perform same
 
 %% Concatenate and detrend flow fields/states if desired
-    
+
 % Define states to be used for DMD
 %states=QQ_u1(:,(begin-beg)+1:end); % define states: first hypothesis
 states_u = QQ_u1(:,(itsf-1)*0.1:end); %fluid flow as states, identification data set
@@ -150,80 +135,58 @@ end
 % states1 = Deterministic;
 % statesvalid1 = Deterministic_val;
 noStateUV = 1/3 *size(states1,1); %u and v selected
-for idx = 1: length(koopmanVec)
-    koopman = koopmanVec(idx);  
-    states = states1(1:noStateUV,:);
-    statesvalid = statesvalid1(1:noStateUV,:);
+PolyLiftingFunction = 0;
+noStates = [2,4,6,12,24];
+for idx = 1: length(noStates)
+    koopman = koopmanVec;
+    noState = noStates(idx);
 
-    %include non linear observables - Koopman extensions to better recover non linear dynamics
-    if koopman > 0
-        %[nonlobs]=koopmanstateextension(double(QQ_u1), double(QQ_v1), double(QQ_v1),rho);
-        %states=[states;nonlobs(:,(itsf-1)*0.1:end)];
+    %% states from wind flow field
+    statesWind = [states1(1:noStateUV,:); states1(1:noStateUV,:).^2; states1(1:noStateUV,:).^3]; %[states_u; states_u.^2; statesvalid_u.^3];
+    statesWindvalid = [statesvalid1(1:noStateUV,:); statesvalid1(1:noStateUV,:).^2; statesvalid1(1:noStateUV,:).^3];
+    strKoop = 'Lin, quad. + cubic';
 
-        % Deterministic_val = [Ur1(tval:end); Ur2(tval:end)];
-        % nonlobsvalid = koopmanstateextension(statesvalid_u, statesvalid_v, statesvalid_w, rho,Deterministic_val); %sqrt(states_u.^2 + states_v.^2).^3;
-        %onlobsvalid1 = koopmanstateextension(statesvalid_u, statesvalid_v, statesvalid_w, rho);
-        %statesvalid = [ statesvalid; nonlobsvalid1 ];% [statesvalid_u; statesvalid_u.^2; statesvalid_u.^3;nonlobs1];% nonlobsvalid1]; % statesvalid_u.^3]; %[statesvalid_u; nonlobsvalid1]; %nonlobsvalid; states_u.^3 statesvalid_u;  states_u.^3;  states_u.^2; ;states_u.^
-
-        if koopman == 1 % linear + quadratic + cubic
-            states = [states1(1:noStateUV,:); states1(1:noStateUV,:).^2];
-            statesvalid = [statesvalid1(1:noStateUV,:); statesvalid1(1:noStateUV,:).^2];
-            strKoop = 'Lin. + quad.';
-
-        elseif koopman == 2 % linear + cubic
-
-            states= [states1(1:noStateUV,:); states1(1:noStateUV,:).^3];
-            statesvalid = [statesvalid(1:noStateUV,:); statesvalid(1:noStateUV,:).^3];
-            strKoop = 'Lin. + cubic';
-
-
-        elseif koopman == 3 % linear + quadratic + cubic
-            states= [states1(1:noStateUV,:); states1(1:noStateUV,:).^2; states1(1:noStateUV,:).^3]; %[states_u; states_u.^2; statesvalid_u.^3];
-            statesvalid = [statesvalid1(1:noStateUV,:); statesvalid1(1:noStateUV,:).^2; statesvalid1(1:noStateUV,:).^3];
-            strKoop = 'Lin, quad. + cubic';
-
-        elseif koopman == 4
-
-            multCos = cos(pi/180*Inputs);
-            multCos_valid = cos(pi/180*Inputs_val);
-
-            velSquare = (states_u(1:size(states_v,1),:).^2 + ...
-                states_v(1:size(states_v,1),:).^2) .^ 0.5;
-
-            nTurb = size(velSquare,1)/2;
-
-            velSquareMult = [velSquare(1:nTurb,:) .* repmat(multCos,nTurb,1);
-                velSquare(nTurb+1:end,:)];
-
-            velSquare_valid = (statesvalid_u(1:size(states_v,1),:).^2 + ...
-                statesvalid_v(1:size(states_v,1),:).^2) .^ 0.5;
-            velSquareMult_valid = [velSquare_valid(1:nTurb,:) .* repmat(multCos_valid,nTurb,1);
-                velSquare_valid(nTurb+1:end,:)];
-
-            Ur1 = mean(velSquareMult(1:nTurb,:));
-            Ur2 = mean(velSquareMult(nTurb+1:end,:));
-            Ur1valid = mean(velSquareMult_valid(1:nTurb,:));
-            Ur2valid = mean(velSquareMult_valid(nTurb+1:end,:));
-
-            states= [states_u; Ur1;Ur2;Ur1.^2;Ur2.^2;Ur1.^3;Ur2.^3]; % velSquareMult.^2; velSquareMult.^3;
-            statesvalid = [statesvalid_u;velSquareMult_valid.^2; velSquareMult_valid.^3; Ur2valid;Ur1valid.^2;Ur2valid.^2;Ur1valid.^3;Ur2valid.^3];
-
-            strKoop = 'Lin + velsqare';% Best performance T2, T1: 83.777, 96.645, model states 84
-
+ structPrev.Ur1_prev1 = Deterministic(1,1);
+        structPrev.Ur2_prev1 = Deterministic(2,1);
+        structPrev.dUr1_prev1 = 0;
+        structPrev.dUr2_prev1 = 0;
+        structPrev.M1(1) = Deterministic(1,1); % Moving mean
+        structPrev.M2(1) = Deterministic(2,1);
+        structPrev.k = 1;
+        
+        statesUr = nan(noState,size(Deterministic,2));
+        for idxK = 1: length(Deterministic)
+            [statesUr(:,idxK),stateNameUr,structPrev]  = K_psi_3D(Deterministic(:,idxK),noState,structPrev,PolyLiftingFunction);
         end
+        
+        % windAtTurbine = [QQ_u1; QQ_v1];
+        % statesUV = koopmanstateextensionWFSim(windAtTurbine,poly,n);
+        % stateNameUV = regexprep(stateNameUr,{'Ur1','Ur2','M'},{'u','v','Muv'});
+        states = [statesWind;statesUr(3:noState,:)]; %[statesUr]; %;statesUV];
+        stateName = [stateNameUr]; %,';',stateNameUV];
+
+        structPrev.Ur1_prev1 = Deterministic_val(1,1);
+        structPrev.Ur2_prev1 = Deterministic_val(2,1);
+        structPrev.dUr1_prev1 = 0;
+        structPrev.dUr2_prev1 = 0;
+        structPrev.M1(1) = Deterministic_val(1,1); % Moving mean
+        structPrev.M2(1) = Deterministic_val(2,1);
+        structPrev.k = 1;
+        statesvalidUr = nan(noState,size(Deterministic_val,2));
+        for idxK = 1: length(Deterministic_val)
+            [statesvalidUr(:,idxK),stateNameUr,structPrev]  = K_psi_3D(Deterministic_val(:,idxK),noState,structPrev,PolyLiftingFunction);
+        end
+        % windAtTurbineVal = [valid.QQ_u1; valid.QQ_v1];
+        % statesUV_val = koopmanstateextensionWFSim(windAtTurbineVal,poly,n);
+        statesvalid = [statesWindvalid; statesvalidUr(3:noState,:)]; %;statesUV_val];
 
 
-    else
-        states = states_u;
-        statesvalid = statesvalid_u;
-        strKoop = 'Lin.';
-    end
-
+       
     n = size(states,1);
     r = min(r,n); %define truncation level for Singular Value Decomposition
 
-    states=double(states); %ensure states are double and not single matrix
-    statesvalid=double(statesvalid); %ensure correpsonding vliadation states are double and not single matrix
+    % states=double(states); %ensure states are double and not single matrix
+    % statesvalid=double(statesvalid); %ensure correpsonding vliadation states are double and not single matrix
     f = '';
     plotView = 0; plotOn = 0;
     [sys_red,FITje,U,S,V,method,X,X_p,Xd,dirdmd,xstates]=dynamicmodedecomposition(states,Inputs, Outputs, Deterministic,method,r,maindir,f,dt,plotView,plotOn);
@@ -273,10 +236,9 @@ for idx = 1: length(koopmanVec)
 
 end
 
-if length(koopmanVec) >= 4
-    save(sprintf('simAll%d_plotStruct_resampledOriginal.mat',retakePoint),'plotStruct');
+save(sprintf('simAll%d_plotStruct_resampledOriginal_Kpsi%d.mat',retakePoint,aStruct.noState),'plotStruct');
 
-end
+
 
 % if size(Outputs,1)==2
 % fid = fopen(['VAF_',strrep(filenameId,'.mat',''),'.txt'],'w');
@@ -295,7 +257,7 @@ for idx = 1 : length(plotStruct)
     aStructCell = regexp(aStruct.legStrAll,';','split');
     matches = regexp(aStruct.legStrAllId, '(\d+\.\d+)(?=%)', 'match');
     vaf_values = str2double(matches);
-    fprintf(fid, '%s & %s &  %d & %d & %2.2f\\ & %2.2f\\%% \n', aStructCell{1}, aStructCell{2}, ... 
+    fprintf(fid, '%s & %s &  %d & %d & %2.2f\\ & %2.2f\\%% \n', aStructCell{1}, aStructCell{2}, ...
         aStruct.noState, aStruct.noStateVAF, aStruct.a1, aStruct.a);
 
 end
