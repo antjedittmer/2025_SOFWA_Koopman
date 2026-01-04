@@ -41,7 +41,7 @@ nleg = length(leg);
 
 cl1 = {[1,0,0]; 0*[1,1,1]; [1,0,1]};
 
-vec = [1,2,4];
+vec = [1,2,length(plotStruct)];
 for sidx = 1: 3 % length(plotStruct)
     idx = vec(sidx);
     simPwr =  plotStruct{idx}.ysim_val(1:end-1,idx0);

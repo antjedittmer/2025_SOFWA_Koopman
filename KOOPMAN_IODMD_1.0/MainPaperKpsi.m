@@ -236,11 +236,10 @@ for idx = 1: length(noStates)
 
 end
 
-save(sprintf('simAll%d_plotStruct_resampledOriginal_Kpsi%d.mat',retakePoint,aStruct.noState),'plotStruct');
 
 
 
-% if size(Outputs,1)==2
+%% if size(Outputs,1)==2
 % fid = fopen(['VAF_',strrep(filenameId,'.mat',''),'.txt'],'w');
 % fprintf(fid,'No K.\t PT1(Id)\t PT1(Val)\t\t PT2(Id)\t PT2(Val)\n');
 % else
@@ -262,6 +261,8 @@ for idx = 1 : length(plotStruct)
 
 end
 fclose(fid);
+
+save(sprintf('simAll%d_plotStruct_resampledOriginal_Kpsi%d.mat',retakePoint,aStruct.noState),'plotStruct');
 
 return;
 

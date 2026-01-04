@@ -2,7 +2,7 @@ clc; clear; close
 
 oneFig = 1;
 matFile0 = 'simAll0_plotStruct_resampledOriginal.mat'; %'simAll0_plotStruct.mat'
-matFile1 = 'simAll1_plotStruct_resampledOriginal.mat'; 
+matFile1 = 'simAll1_plotStruct_resampledOriginal_Kpsi148', %'simAll1_plotStruct_resampledOriginal_Kpsi274'; %'simAll1_plotStruct_resampledOriginal.mat'; 
 
 load(matFile0,'plotStruct');
 plotStruct1 = plotStruct;
@@ -46,7 +46,7 @@ nleg = length(leg);
 
 cl1 = {[1,0,0]; 0*[1,1,1]; [1,0,1]};
 
-vec = [1,2,4];
+vec = [1,2,length(plotStruct)];
 for sidx = 1: 3 % length(plotStruct)
     idx = vec(sidx);
     simPwr = plotStruct{idx}.ysim_val(1:end-1,1) + plotStruct{idx}.ysim_val(1:end-1,2);
