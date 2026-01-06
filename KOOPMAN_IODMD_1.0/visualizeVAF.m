@@ -1,8 +1,17 @@
-clc; clear; close
+clc; clear; close all;
+
+figDir = fullfile(pwd,'figDir');
+if exist(figDir,'dir') ~= 7
+    mkdir(figDir);
+end
 
 oneFig = 1;
+matFile0 = 'simAll1_plotStruct_resampledOriginal.mat'; %'simAll0_plotStruct.mat'
+matFile1 = 'simAll1_plotStruct_resampledOriginal_Kpsi148.mat'; %'simAll1_plotStruct_resampledOriginal.mat'; %, 
+%'simAll1_plotStruct_resampledOriginal_Kpsi274'; %; 
+
 matFile0 = 'simAll0_plotStruct_resampledOriginal.mat'; %'simAll0_plotStruct.mat'
-matFile1 = 'simAll1_plotStruct_resampledOriginal_Kpsi148', %'simAll1_plotStruct_resampledOriginal_Kpsi274'; %'simAll1_plotStruct_resampledOriginal.mat'; 
+matFile1 = 'simAll2_plotStruct_resampledOriginal.mat'; %'simAll1_plotStruct_resampledOriginal.mat'; %, 
 
 load(matFile0,'plotStruct');
 plotStruct1 = plotStruct;
@@ -64,12 +73,10 @@ axis tight; grid on;
 ylabel('\delta Power T1 + T2 (MW)','Fontsize',fs)
 xlabel('Time (s)','Fontsize',fs)
 
-figDir = pwd;
-
 if oneFig == 0
     strFig = 'PowerEstSofwa';
-    print(fullfile(figDir,[strFig]), '-dpng');
-    print(fullfile(figDir,[strFig]), '-depsc');
+    print(fullfile(figDir,[strFig, matFile1(1:7)]), '-dpng');
+    print(fullfile(figDir,[strFig, matFile1(1:7)]), '-depsc');
 end
 
 %legend(leg)
@@ -116,5 +123,6 @@ else
 strFig = 'PowerEstSofwaInOut';
 
 end
-print(fullfile(figDir,[strFig]), '-dpng');
-print(fullfile(figDir,[strFig]), '-depsc');
+
+print(fullfile(figDir,[strFig, matFile1(1:7)]), '-dpng');
+print(fullfile(figDir,[strFig, matFile1(1:7)]), '-depsc');

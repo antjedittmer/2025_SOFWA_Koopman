@@ -31,7 +31,7 @@ elseif pitchmode == 1
 end
 
 detrendingstates = 1; %1 to take mean flow and consider turbulent fluctuations
-method = 2; %0: DMD ; 1:DMDc; 2:IODMD; 3:EIODMD
+method = 3; %0: DMD ; 1:DMDc; 2:IODMD; 3:EIODMD
 videos = 0; %generate videos
 snapshots = 0; %generate snapshots from simulation data
 koopmanVec = 0:3; %to add deterministic states to flow field data
@@ -63,7 +63,6 @@ else
 end
 
 %% Retake points
-
 if retakePoint == 0
     % QQ_u1 =QQ_u;
     % QQ_v1 =QQ_v;
@@ -75,6 +74,7 @@ if retakePoint == 0
 
     %for not using all grid points and only part of them (example,
     %only between first and second turbine)
+    strRetake = 'All wind meas.';
     [~,~,~,~,~,~,QQ_u1] = retakepoints(QQ_u,x,y,z,Decimate);
     [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_u1] = retakepoints(valid.QQ_u,x,y,z,Decimate);
 
@@ -86,8 +86,8 @@ if retakePoint == 0
 
 elseif retakePoint == 1
 
-    %for not using all grid points and only part of them (example,
-    %only between first and second turbine)
+    % wind at turbine hubheight 
+    strRetake = 'Turbine wind meas.'; %'Sparse wind meas.'; %'Turbine wind meas.';
     [~,~,~,~,~,~,QQ_u1] = retakepoints_at_turbine(QQ_u,x,y,z,Decimate);
     [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_u1] = retakepoints_at_turbine(valid.QQ_u,x,y,z,Decimate);
 
@@ -96,8 +96,23 @@ elseif retakePoint == 1
 
     [~,~,~,~,~,~,valid.QQ_v1] = retakepoints_at_turbine(valid.QQ_v,x,y,z,Decimate);
     [~,~,~,~,~,~,valid.QQ_w1] = retakepoints_at_turbine(valid.QQ_w,x,y,z,Decimate);
+
+elseif retakePoint == 2
+
+    % wind at turbine hub height and in between turbines
+    Xsel = [1,10,50,70];
+    strRetake = 'Sparse wind meas.'; %'Turbine wind meas.';
+    [~,~,~,~,~,~,QQ_u1] = retakepoints_at_turbine(QQ_u,x,y,z,Decimate,Xsel);
+    [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_u1] = retakepoints_at_turbine(valid.QQ_u,x,y,z,Decimate,Xsel);
+
+    [~,~,~,~,~,~,QQ_v1] = retakepoints_at_turbine(QQ_v,x,y,z,Decimate,Xsel);
+    [~,~,~,~,~,~,QQ_w1] = retakepoints_at_turbine(QQ_w,x,y,z,Decimate,Xsel);
+
+    [~,~,~,~,~,~,valid.QQ_v1] = retakepoints_at_turbine(valid.QQ_v,x,y,z,Decimate,Xsel);
+    [~,~,~,~,~,~,valid.QQ_w1] = retakepoints_at_turbine(valid.QQ_w,x,y,z,Decimate,Xsel);
+
 else
-      %for not using all grid points and only part of them (example,
+    %for not using all grid points and only part of them (example,
     %only between first and second turbine)
     [~,~,~,~,~,~,QQ_u1] = retakepoints_at_turbinedisk(QQ_u,x,y,z,Decimate);
     [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_u1] = retakepoints_at_turbinedisk(valid.QQ_u,x,y,z,Decimate);
@@ -115,7 +130,7 @@ end
 % valid.QQ_u1 = [double(valid.QQ_u1);double(valid.QQ_v1)]; %double(valid.QQ_w1) %perform same
 
 %% Concatenate and detrend flow fields/states if desired
-    
+
 % Define states to be used for DMD
 %states=QQ_u1(:,(begin-beg)+1:end); % define states: first hypothesis
 states_u = QQ_u1(:,(itsf-1)*0.1:end); %fluid flow as states, identification data set
@@ -140,18 +155,13 @@ end
 [Inputs, Outputs, Deterministic,scalingfactors,meanvalues] = preprocessdmdid(beg, rotSpeed,time1,rotorAzimuth,nacelleYaw, pitchmode,pitch,powerGenerator,rho); %preprocess information (resample, and maintain only relevant data)
 [Inputs_val, Outputs_val, Deterministic_val] = preprocessdmdval(beg, rotSpeed_val,time1_val,rotorAzimuth_val,nacelleYaw_val,pitchmode,pitch_val,scalingfactors,powerGenerator_val,rho,meanvalues); %preprocess information (resample and only relevant data)
 
-if retakePoint == 0
-    strRetake = 'All wind meas.';
-else
-    strRetake = 'Turbine wind meas.';
-end
 
 %% Start loop over
 % states1 = Deterministic;
 % statesvalid1 = Deterministic_val;
 noStateUV = 1/3 *size(states1,1); %u and v selected
 for idx = 1: length(koopmanVec)
-    koopman = koopmanVec(idx);  
+    koopman = koopmanVec(idx);
     states = states1(1:noStateUV,:);
     statesvalid = statesvalid1(1:noStateUV,:);
 
@@ -275,7 +285,6 @@ end
 
 if length(koopmanVec) >= 4
     save(sprintf('simAll%d_plotStruct_resampledOriginal.mat',retakePoint),'plotStruct');
-
 end
 
 % if size(Outputs,1)==2
@@ -295,7 +304,7 @@ for idx = 1 : length(plotStruct)
     aStructCell = regexp(aStruct.legStrAll,';','split');
     matches = regexp(aStruct.legStrAllId, '(\d+\.\d+)(?=%)', 'match');
     vaf_values = str2double(matches);
-    fprintf(fid, '%s & %s &  %d & %d & %2.2f\\ & %2.2f\\%% \n', aStructCell{1}, aStructCell{2}, ... 
+    fprintf(fid, '%s & %s &  %d & %d & %2.2f\\ & %2.2f\\%% \n', aStructCell{1}, aStructCell{2}, ...
         aStruct.noState, aStruct.noStateVAF, aStruct.a1, aStruct.a);
 
 end

@@ -1,4 +1,4 @@
-close all;
+clear; close all;
 
 if exist('QQ_u','var') ~= 1
     parentDir = fileparts(pwd);
@@ -7,7 +7,6 @@ if exist('QQ_u','var') ~= 1
 end
 
 figDir = fullfile(pwd,'figDir');
-
 if exist(figDir,'dir') ~= 7
     mkdir(figDir);
 end
@@ -99,8 +98,8 @@ else
     X = length(xx);
     Z = length(zz);
 
-    Xsel = [1,70];%1:130;%
-    Ysel = 7:22;%1:28;%
+    Xsel = [1,70,10,50];%1:130;%
+    Ysel = 4: 24; %7:22;%1:28;%
     Zsel = 10;
 
     zH = Zsel;
@@ -145,7 +144,7 @@ else
     quiver(Xm_shs_2Dsel,Ym_shs_2Dsel, UmeanAbs_sh_u2Dsel,UmeanAbs_sh_v2Dsel,...
         'r','AutoScaleFactor',0.2);
 
-    legend('Wind contour hub height (m/s)','Wind field data points (m/s)','Wind at turbines data points (m/s)')
+    legend('Wind contour hub height (m/s)','Wind field data points (m/s)','Sparse wind data points (m/s)')
     set(findall(gcf,'-property','FontSize'),'FontSize',13.5)
     axis equal;
 
@@ -156,10 +155,12 @@ else
     print(fullfile(figDir,[strFig,'_x']), '-dpng');
     print(fullfile(figDir,[strFig,'_x']), '-depsc');
 
+    %%
 
-    for idxT = 1:2
+    for idxT = 1:4
         aSel = Xsel(idxT);
         strIdxT = num2str(idxT);
+        strIdM = sprintf('%2.1f',((aSel-1)*12.5));
         UmeanAbs_sh_u2Dcell.T1 = squeeze(UmeanAbs_sh_u(:,aSel,:));
         UmeanAbs_sh_v2Dcell.T1 = squeeze(UmeanAbs_sh_v(:,aSel,:));
         UmeanAbs_sh_w2Dcell.T1 = squeeze(UmeanAbs_sh_w(:,aSel,:));
@@ -191,17 +192,37 @@ else
         xlabel('y (m)','FontSize',fs); ylabel('z (m)','FontSize',fs);
         colorbar(); drawnow;
 
-        legend(['Wind contour WT',strIdxT,' (m/s)'],'Wind field data (m/s)', ['Wind at WT',strIdxT,' data (m/s)'])
+        if idxT < 3
+            legend(['Wind contour WT',strIdxT,' (m/s)'],'Wind field data (m/s)', ['Wind at WT',strIdxT,' data (m/s)'])
+        else
+            lgd = legend(['Wind contour, ',strIdM,' m behind WT1 (m/s)'],'Wind field data (m/s)', 'Wind data (m/s)', 'Location', 'northeast');
+            % 2. Get the current position [left, bottom, width, height]
+            currentPos = lgd.Position;
+
+            % 3. Move it slightly to the right (e.g., add 0.05 to the 'left' value)
+            % These values are normalized (0 to 1) relative to the figure window
+            currentPos(1) = currentPos(1) + 0.015;
+
+            % 4. Apply the new position
+            lgd.Position = currentPos;
+        end
+
         set(findall(gcf,'-property','FontSize'),'FontSize',13.5)
         axis equal;
 
         strFig = 'WindData';
-        print(fullfile(figDir,[strFig,'_T',num2str(idxT)]), '-dpng');
-        print(fullfile(figDir,[strFig,'_T',num2str(idxT)]), '-depsc');
+        if idxT < 3
+            print(fullfile(figDir,[strFig,'_T',num2str(idxT)]), '-dpng');
+            print(fullfile(figDir,[strFig,'_T',num2str(idxT)]), '-depsc');
+        else
+            print(fullfile(figDir,[strFig,'_',num2str(idxT)]), '-dpng');
+            print(fullfile(figDir,[strFig,'_',num2str(idxT)]), '-depsc');
+        end
 
     end
-
 end
+
+
 return;
 
 % c = colorbar();drawnow

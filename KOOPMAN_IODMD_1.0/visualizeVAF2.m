@@ -1,4 +1,9 @@
-function visualizeVAF2(idx0,plotStruct,matFile1)    
+function visualizeVAF2(idx0,plotStruct,matFile1) 
+
+figDir = fullfile(pwd,'figDir');
+if exist(figDir,'dir') ~= 7
+    mkdir(figDir);
+end
 
 if ~nargin
     
@@ -60,10 +65,9 @@ if ~nargin
     legend(leg,'Location','northoutside','Fontsize',fs-1);
     xlabel('Time (s)','Fontsize',fs)
 
-    figDir = pwd;
     strFig = sprintf('PowerEstSofwa%d',idx0);
-    print(fullfile(figDir,strFig), '-dpng');
-    print(fullfile(figDir,strFig), '-depsc');
+    print(fullfile(figDir,[strFig,matFile1(1:7)]), '-dpng');
+    print(fullfile(figDir,[strFig,matFile1(1:7)]), '-depsc');
 end
 
 %legend(leg)
