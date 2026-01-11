@@ -139,8 +139,8 @@ t = tiledlayout(1, 4, 'TileSpacing', 'compact', 'Padding', 'tight');
 
 % Common scaling and titles
 cRange = [2 9.5]; % Unified wind speed range (adjust to your data)
-titles = {'WT1 Rotor', '112.5 m behind WT1', ...
-          '612.5 m behind WT1', 'WT2 Rotor'};
+titles = {'WT1 Rotor (index 1)', '112.5 m behind WT1 (index 10)', ...
+          '612.5 m behind WT1 (index 50)', '27.5 m in front of WT2 Rotor (index 70)'};
 p2 = 1;
 for idxT = 1:4
     aSel = Xsel(idxT);

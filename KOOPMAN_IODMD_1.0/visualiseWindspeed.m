@@ -207,7 +207,7 @@ else
             lgd.Position = currentPos;
         end
 
-        set(findall(gcf,'-property','FontSize'),'FontSize',13.5)
+        set(findall(gcf,'-property','FontSize'),'FontSize',fs)
         axis equal;
 
         strFig = 'WindData';

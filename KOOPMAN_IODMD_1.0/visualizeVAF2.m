@@ -58,7 +58,7 @@ fs = 12;
 
 axis tight; grid on;
 
-strLeg = sprintf('Power T%d (MW)',idx0);
+strLeg = sprintf('Power T%d (-)',idx0);
 ylabel(['\delta ',strLeg],'Fontsize',fs)
 
 if ~nargin
