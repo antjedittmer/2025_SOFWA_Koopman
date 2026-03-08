@@ -34,8 +34,8 @@ detrendingstates = 1; %1 to take mean flow and consider turbulent fluctuations
 method = 3; %0: DMD ; 1:DMDc; 2:IODMD; 3:EIODMD
 videos = 0; %generate videos
 snapshots = 0; %generate snapshots from simulation data
-koopmanVec = 0:3; %to add deterministic states to flow field data
-retakePoint = 1;
+koopmanVec = 1:3; %to add deterministic states to flow field data
+retakePoint = 2;
 r = 100;
 
 % Turbine and flow characteristics to be used
@@ -100,7 +100,8 @@ elseif retakePoint == 1
 elseif retakePoint == 2
 
     % wind at turbine hub height and in between turbines
-    Xsel = [1,10,50,68];
+    Xsel = [1,10,50,69];
+    Xsel = [2    10    51    70]; 
     strRetake = 'Sparse wind meas.'; %'Turbine wind meas.';
     [~,~,~,~,~,~,QQ_u1] = retakepoints_at_turbine(QQ_u,x,y,z,Decimate,Xsel);
     [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_u1] = retakepoints_at_turbine(valid.QQ_u,x,y,z,Decimate,Xsel);

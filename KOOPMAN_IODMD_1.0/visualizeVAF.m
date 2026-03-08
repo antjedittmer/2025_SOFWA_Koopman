@@ -77,8 +77,8 @@ for sidx = 1: length(vec)
     RMSEvec(sidx+3) = sqrt(mean((simPwr -simPwrRef').^2));
     plot(t,simPwr,'color', cl1{sidx},'linestyle',ls{sidx},LineWidth=lw); % idx/2*[0,0,1]) ; hold on;
     %leg{sidx + nleg} = strrep(strrep(strrep(plotStruct{idx}.legStr2,':',': '),'meas.',''),'wind ','wind');
-    leg{sidx + nleg} = strrep(strrep(strrep(strrep(plotStruct{idx}.legStr2,':',': '),'meas.',''),'wind ','wind'),...
-        'VAF P(T2)', 'VAF(P_2)');
+    leg{sidx + nleg} = strrep(strrep(strrep(strrep(strrep(plotStruct{idx}.legStr2,':',': '),'meas.',''),'wind ','wind'),...
+        'VAF P(T2)', 'VAF(P_2)'),'n_{koop}','n_{g{\omega}}');
 
 end
 
@@ -138,6 +138,7 @@ end
 
 visualizeVAF2(2,plotStruct1,matFile1)
 xlabel('Time (s)','Fontsize',fs)
+set(findall(gcf,'-property','FontSize'),'FontSize',fs);
 
 
 if oneFig == 1
@@ -146,7 +147,6 @@ else
     strFig = 'PowerEstSofwaInOut';
 
 end
-set(findall(gcf,'-property','FontSize'),'FontSize',fs);
 
 
 print(fullfile(figDir,[strFig, matFile1(1:7)]), '-dpng');

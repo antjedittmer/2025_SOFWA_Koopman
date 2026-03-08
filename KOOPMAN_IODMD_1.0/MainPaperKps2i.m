@@ -20,12 +20,13 @@ analysis ='YAW_MPC_offset_test'; %name of directory to be created to automatical
 filename ='yaw_control/U_data_complete_vec_yaw_off.mat'; %directory for matlab file with flow field identification data set
 filenamevalid ='yaw_control/U_data_complete_vec_yaw_off_val.mat'; %directory for matlab file with flow field validation data set
 
+
 detrendingstates = 1; %1 to take mean flow and consider turbulent fluctuations
 method = 3; %0: DMD ; 1:DMDc; 2:IODMD; 3:EIODMD
 videos = 0; %generate videos
 snapshots = 0; %generate snapshots from simulation data
 koopmanVec = 3; %to add deterministic states to flow field data
-retakePoint = 2;
+retakePoint = 1;
 r = 100;
 
 % Turbine and flow characteristics to be used
@@ -54,19 +55,10 @@ end
 
 %% Retake points
 
-%% Retake points
 if retakePoint == 0
-    % QQ_u1 =QQ_u;
-    % QQ_v1 =QQ_v;
-    % QQ_w1 =QQ_w;
-    %
-    % valid.QQ_u1 = valid.QQ_u;
-    % valid.QQ_v1 = valid.QQ_v;
-    % valid.QQ_w1 = valid.QQ_w;
 
     %for not using all grid points and only part of them (example,
     %only between first and second turbine)
-    strRetake = 'All wind meas.';
     [~,~,~,~,~,~,QQ_u1] = retakepoints(QQ_u,x,y,z,Decimate);
     [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_u1] = retakepoints(valid.QQ_u,x,y,z,Decimate);
 
@@ -78,8 +70,8 @@ if retakePoint == 0
 
 elseif retakePoint == 1
 
-    % wind at turbine hubheight 
-    strRetake = 'Turbine wind meas.'; %'Sparse wind meas.'; %'Turbine wind meas.';
+    %for not using all grid points and only part of them (example,
+    %only between first and second turbine)
     [~,~,~,~,~,~,QQ_u1] = retakepoints_at_turbine(QQ_u,x,y,z,Decimate);
     [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_u1] = retakepoints_at_turbine(valid.QQ_u,x,y,z,Decimate);
 
@@ -88,21 +80,6 @@ elseif retakePoint == 1
 
     [~,~,~,~,~,~,valid.QQ_v1] = retakepoints_at_turbine(valid.QQ_v,x,y,z,Decimate);
     [~,~,~,~,~,~,valid.QQ_w1] = retakepoints_at_turbine(valid.QQ_w,x,y,z,Decimate);
-
-elseif retakePoint == 2
-
-    % wind at turbine hub height and in between turbines
-    Xsel = [1,10,50,70];
-    strRetake = 'Sparse wind meas.'; %'Turbine wind meas.';
-    [~,~,~,~,~,~,QQ_u1] = retakepoints_at_turbine(QQ_u,x,y,z,Decimate,Xsel);
-    [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_u1] = retakepoints_at_turbine(valid.QQ_u,x,y,z,Decimate,Xsel);
-
-    [~,~,~,~,~,~,QQ_v1] = retakepoints_at_turbine(QQ_v,x,y,z,Decimate,Xsel);
-    [~,~,~,~,~,~,QQ_w1] = retakepoints_at_turbine(QQ_w,x,y,z,Decimate,Xsel);
-
-    [~,~,~,~,~,~,valid.QQ_v1] = retakepoints_at_turbine(valid.QQ_v,x,y,z,Decimate,Xsel);
-    [~,~,~,~,~,~,valid.QQ_w1] = retakepoints_at_turbine(valid.QQ_w,x,y,z,Decimate,Xsel);
-
 else
     %for not using all grid points and only part of them (example,
     %only between first and second turbine)
@@ -147,37 +124,26 @@ end
 [Inputs, Outputs, Deterministic,scalingfactors,meanvalues] = preprocessdmdid(beg, rotSpeed,time1,rotorAzimuth,nacelleYaw, pitchmode,pitch,powerGenerator,rho); %preprocess information (resample, and maintain only relevant data)
 [Inputs_val, Outputs_val, Deterministic_val] = preprocessdmdval(beg, rotSpeed_val,time1_val,rotorAzimuth_val,nacelleYaw_val,pitchmode,pitch_val,scalingfactors,powerGenerator_val,rho,meanvalues); %preprocess information (resample and only relevant data)
 
-
+if retakePoint == 0
+    strRetake = 'All wind meas.';
+else
+    strRetake = 'Turbine wind meas.';
+end
 
 %% Start loop over
 % states1 = Deterministic;
 % statesvalid1 = Deterministic_val;
 noStateUV = 1/3 *size(states1,1); %u and v selected
 PolyLiftingFunction = 0;
-noStates = [4,6,12,24];
-koopman0 = 0;
+noStates = [2,4,6,12,24];
 for idx = 1: length(noStates)
     koopman = koopmanVec;
     noState = noStates(idx);
 
     %% states from wind flow field
-    if koopman0 == 1 % linear + quadratic + cubic
-        statesWind = [states1(1:noStateUV,:); states1(1:noStateUV,:).^2];
-        statesWindvalid = [statesvalid1(1:noStateUV,:); statesvalid1(1:noStateUV,:).^2];
-        strKoop = 'Lin. + quad.';
-
-    elseif koopman0 == 2 % linear + cubic
-
-        statesWind = [states1(1:noStateUV,:); states1(1:noStateUV,:).^2; states1(1:noStateUV,:).^3]; %[states_u; states_u.^2; statesvalid_u.^3];
-        statesWindvalid = [statesvalid1(1:noStateUV,:); statesvalid1(1:noStateUV,:).^2; statesvalid1(1:noStateUV,:).^3];
-        strKoop = sprintf('Lin, quad. + cubic, n_{koop} = %d',noState);
-
-    else
-        statesWind = [states1(1:noStateUV,:)];
-        statesWindvalid = [statesvalid1(1:noStateUV,:)];
-        strKoop = 'Lin.';
-
-    end
+    statesWind = [states1(1:noStateUV,:); states1(1:noStateUV,:).^2; states1(1:noStateUV,:).^3]; %[states_u; states_u.^2; statesvalid_u.^3];
+    statesWindvalid = [statesvalid1(1:noStateUV,:); statesvalid1(1:noStateUV,:).^2; statesvalid1(1:noStateUV,:).^3];
+    strKoop = 'Lin, quad. + cubic';
 
  structPrev.Ur1_prev1 = Deterministic(1,1);
         structPrev.Ur2_prev1 = Deterministic(2,1);
@@ -195,7 +161,8 @@ for idx = 1: length(noStates)
         % windAtTurbine = [QQ_u1; QQ_v1];
         % statesUV = koopmanstateextensionWFSim(windAtTurbine,poly,n);
         % stateNameUV = regexprep(stateNameUr,{'Ur1','Ur2','M'},{'u','v','Muv'});
-        states = [statesWind;statesUr(3:noState,:)]; %[statesUr]; %;statesUV];
+        states = statesWind; %[statesUr]; %;statesUV];
+        Deterministic = statesUr;
         stateName = [stateNameUr]; %,';',stateNameUV];
 
         structPrev.Ur1_prev1 = Deterministic_val(1,1);
@@ -211,8 +178,8 @@ for idx = 1: length(noStates)
         end
         % windAtTurbineVal = [valid.QQ_u1; valid.QQ_v1];
         % statesUV_val = koopmanstateextensionWFSim(windAtTurbineVal,poly,n);
-        statesvalid = [statesWindvalid; statesvalidUr(3:noState,:)]; %;statesUV_val];
-
+        statesvalid = statesWindvalid;  %;statesUV_val];
+Deterministic_val =statesvalidUr;
 
        
     n = size(states,1);
@@ -276,7 +243,7 @@ end
 % fid = fopen(['VAF_',strrep(filenameId,'.mat',''),'.txt'],'w');
 % fprintf(fid,'No K.\t PT1(Id)\t PT1(Val)\t\t PT2(Id)\t PT2(Val)\n');
 % else
-fid = fopen(['VAF_retake_',num2str(retakePoint),'_Koop.txt'],'w');
+fid = fopen(['VAF_retake_',num2str(retakePoint),'.txt'],'w');
 %fprintf(fid,'No K.\t PT1(Id)\t PT1(Val)\t PT2(Id)\t PT2(Val)\t FT1(Id)\t FT1(Val)\t\t FT2(Id)\t FT2(Val)\n');
 
 fprintf(fid,'Data subset & Lifting functions & States \\zeta & Selected States \\tilde{\\zeta} & VAF(P_1) & VAF(P_2)\n');
