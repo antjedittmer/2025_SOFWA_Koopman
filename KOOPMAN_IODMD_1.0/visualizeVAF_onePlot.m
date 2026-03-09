@@ -9,7 +9,6 @@ load('DataSetScaling.mat', 'scalingfactors','meanvalues');
 
 setTurbine = 0;
 
-
 if setTurbine == 1
     matFile0 = 'simAll1_plotStruct_resampledOriginal.mat';
     matFile1 = 'simAll1_plotStruct_resampledOriginal_Kpsi148.mat';
@@ -120,6 +119,9 @@ ylabel('Pwr WF (MW)','FontSize',fs)
 xlabel('Time (s)','FontSize',fs)
 
 set(findall(gcf,'-property','FontSize'),'FontSize',11.5)
+
+set(gcf,'Units','centimeters','Position',[0 0 17 18]);
+set(gcf,'PaperUnits','centimeters','PaperPosition',[0 0 17 18]);
 
 
 strFig = 'aPowerEstSofwaInOut';
