@@ -1,6 +1,7 @@
 
 %% Data handling
-clc; close all; clear;
+clc; close all; 
+clearvars -except QQ_u QQ_v QQ_w x y z;
 
 restoredefaultpath;
 addpath('./1.ASSESS_DATA','./2.DYNAMIC_MODE_DECOMPOSITION','./3.VALIDATION','./4.DYNAMICAL_ANALYSIS','./5.REBUILD','./6.MODEL_PC','OTHER');
@@ -11,6 +12,13 @@ maindir = [pwd,'/matlab_code_tests/']; %directory to save results
 codedir = mfilename('fullpath');
 parentdir = fileparts(fileparts(codedir));
 DataIn = fullfile(parentdir,'data');
+loadMat = 0;
+
+
+datOutputDir = 'datOutputDir'; % create output directory
+if exist(datOutputDir,'dir') ~= 7
+    mkdir(datOutputDir);
+end
 
 pitchmode = 0; %0 for wake redirection control (yaw) and 1 for axial induction control (pitch)
 
@@ -34,8 +42,8 @@ detrendingstates = 1; %1 to take mean flow and consider turbulent fluctuations
 method = 3; %0: DMD ; 1:DMDc; 2:IODMD; 3:EIODMD
 videos = 0; %generate videos
 snapshots = 0; %generate snapshots from simulation data
-koopmanVec = 1:3; %to add deterministic states to flow field data
-retakePoint = 2;
+koopmanVec = 0:3; %to add deterministic states to flow field data
+retakePoint = 1;
 r = 100;
 
 % Turbine and flow characteristics to be used
@@ -86,7 +94,7 @@ if retakePoint == 0
 
 elseif retakePoint == 1
 
-    Xsel = [1,72];
+    Xsel = [1,70];
     strRetake = 'Turbine wind meas.';
     [~,~,~,~,~,~,QQ_u1] = retakepoints_at_turbine(QQ_u,x,y,z,Decimate,Xsel);
     [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_u1] = retakepoints_at_turbine(valid.QQ_u,x,y,z,Decimate,Xsel);
@@ -100,8 +108,8 @@ elseif retakePoint == 1
 elseif retakePoint == 2
 
     % wind at turbine hub height and in between turbines
-    Xsel = [1,10,50,69];
-    Xsel = [2    10    51    70]; 
+    %Xsel = [1,10,50,69];
+    Xsel = [2,10,51,70]; 
     strRetake = 'Sparse wind meas.'; %'Turbine wind meas.';
     [~,~,~,~,~,~,QQ_u1] = retakepoints_at_turbine(QQ_u,x,y,z,Decimate,Xsel);
     [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_u1] = retakepoints_at_turbine(valid.QQ_u,x,y,z,Decimate,Xsel);
@@ -158,6 +166,19 @@ end
 
 
 %% Start loop over
+aMatFilename = sprintf('simAll%d_plotStruct.mat',retakePoint);
+
+if retakePoint > 0
+    endmat = ['_long',num2str(Xsel(end)),'.mat'];
+    aMatFilename  = strrep(aMatFilename,'.mat', endmat);
+end
+
+aMatFullfilename = fullfile(datOutputDir,aMatFilename);
+
+if exist(aMatFullfilename,'file') == 2 && loadMat == 1
+     load(aMatFullfilename,'plotStruct');
+else
+
 % states1 = Deterministic;
 % statesvalid1 = Deterministic_val;
 noStateUV = 1/3 *size(states1,1); %u and v selected
@@ -168,14 +189,7 @@ for idx = 1: length(koopmanVec)
 
     %include non linear observables - Koopman extensions to better recover non linear dynamics
     if koopman > 0
-        %[nonlobs]=koopmanstateextension(double(QQ_u1), double(QQ_v1), double(QQ_v1),rho);
-        %states=[states;nonlobs(:,(itsf-1)*0.1:end)];
-
-        % Deterministic_val = [Ur1(tval:end); Ur2(tval:end)];
-        % nonlobsvalid = koopmanstateextension(statesvalid_u, statesvalid_v, statesvalid_w, rho,Deterministic_val); %sqrt(states_u.^2 + states_v.^2).^3;
-        %onlobsvalid1 = koopmanstateextension(statesvalid_u, statesvalid_v, statesvalid_w, rho);
-        %statesvalid = [ statesvalid; nonlobsvalid1 ];% [statesvalid_u; statesvalid_u.^2; statesvalid_u.^3;nonlobs1];% nonlobsvalid1]; % statesvalid_u.^3]; %[statesvalid_u; nonlobsvalid1]; %nonlobsvalid; states_u.^3 statesvalid_u;  states_u.^3;  states_u.^2; ;states_u.^
-
+       
         if koopman == 1 % linear + quadratic + cubic
             states = [states1(1:noStateUV,:); states1(1:noStateUV,:).^2];
             statesvalid = [statesvalid1(1:noStateUV,:); statesvalid1(1:noStateUV,:).^2];
@@ -268,7 +282,7 @@ for idx = 1: length(koopmanVec)
     [~,~,~,~,~,ysim] = evaluatemodel(sys_red,b,Inputs_val,Outputs,FITje,OMEGA,DAMPING,purpose,x,...
         states,U,Deterministic,method,plotView,plotOn);
 
-    plotStruct{idx}.Outputs_val = Outputs_val;
+    plotStruct{idx}.Outputs_val = Outputs_val; 
     plotStruct{idx}.ysim_val = ysim_val;
     plotStruct{idx}.Outputs = Outputs;
     plotStruct{idx}.ysim = ysim;
@@ -283,19 +297,35 @@ for idx = 1: length(koopmanVec)
     plotStruct{idx}.legStr2 =  sprintf('%s; %s; VAF P(T2):%2.2f%%', strRetake,strKoop,a);
 
 end
-
+% Save to matfile:
 if length(koopmanVec) >= 4
-    save(sprintf('simAll%d_plotStruct_resampledOriginal.mat',retakePoint),'plotStruct');
+    save(aMatFullfilename,'plotStruct');
+end
 end
 
-% if size(Outputs,1)==2
-% fid = fopen(['VAF_',strrep(filenameId,'.mat',''),'.txt'],'w');
-% fprintf(fid,'No K.\t PT1(Id)\t PT1(Val)\t\t PT2(Id)\t PT2(Val)\n');
-% else
-fid = fopen(['VAF_retake_',num2str(retakePoint),'_long',num2str(Xsel(end)),'.txt'],'w');
+%% calculate the RMSE
+simPwr1 = plotStruct{1}.Outputs_val(1,1:end-1) * scalingfactors(1) + meanvalues(1);
+simPwr2 = plotStruct{2}.Outputs_val(2,1:end-1) * scalingfactors(2) + meanvalues(2);
+simPwrRef = (simPwr1 + simPwr2)/10^6;
+
+RMSEvec = nan(length(koopmanVec),1);
+for idx = 1:length(koopmanVec)
+    simPwr1 = plotStruct{idx}.ysim_val(1:end-1,1) * scalingfactors(1) + meanvalues(1);
+    simPwr2 = plotStruct{idx}.ysim_val(1:end-1,2) * scalingfactors(2) + meanvalues(2);
+    simPwr = (simPwr1 + simPwr2)/10^6;
+    RMSEvec(idx) = sqrt(mean((simPwr -simPwrRef').^2));     
+end
+NRMSE_pct = (RMSEvec/ mean(simPwrRef)) * 100;
+RMSEveckW = RMSEvec *1000;
+
+
+%%
+aTextFile = strrep(strrep(strrep(aMatFullfilename,'simAll','VAF_retake'),'_plotStruct', ''),'.mat','.txt');
+fid = fopen(aTextFile,'w');
+
 %fprintf(fid,'No K.\t PT1(Id)\t PT1(Val)\t PT2(Id)\t PT2(Val)\t FT1(Id)\t FT1(Val)\t\t FT2(Id)\t FT2(Val)\n');
 
-fprintf(fid,'Data subset & Lifting functions & States \\zeta & Selected States \\tilde{\\zeta} & VAF(P_1) & VAF(P_2)\n');
+fprintf(fid,'Data subset & Lifting functions & States \\zeta & Selected States \\tilde{\\zeta} & VAF(P_1) & VAF(P_2) & NRMSE \n');
 
 for idx = 1 : length(plotStruct)
     % fprintf('%s\n',plotStruct{idx}.legStrAllId);
@@ -305,8 +335,8 @@ for idx = 1 : length(plotStruct)
     aStructCell = regexp(aStruct.legStrAll,';','split');
     matches = regexp(aStruct.legStrAllId, '(\d+\.\d+)(?=%)', 'match');
     vaf_values = str2double(matches);
-    fprintf(fid, '%s & %s &  %d & %d & %2.2f\\ & %2.2f\\%% \n', aStructCell{1}, aStructCell{2}, ...
-        aStruct.noState, aStruct.noStateVAF, aStruct.a1, aStruct.a);
+    fprintf(fid, '%s & %s &  %d & %d & %2.2f\\ & %2.2f\\%% & %2.2f\\%% \n', aStructCell{1}, aStructCell{2}, ...
+        aStruct.noState, aStruct.noStateVAF, aStruct.a1, aStruct.a, NRMSE_pct(idx));
 
 end
 fclose(fid);

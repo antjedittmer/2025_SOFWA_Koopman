@@ -1,5 +1,7 @@
 clc; clear; close all;
 
+addpath('2.DYNAMIC_MODE_DECOMPOSITION');
+
 figDir = fullfile(pwd,'figDir');
 if exist(figDir,'dir') ~= 7
     mkdir(figDir);
@@ -113,7 +115,7 @@ leg_clean = strrep(strrep(strrep(leg_clean,'; VAF(P_2):',''),' meas',''),'wind.'
 leg_clean = strrep(leg_clean,'wind', 'meas.');
 
 
-legend(leg_clean,'Location','southoutside','FontSize',fs-1,'Box','off','NumColumns', 2);
+legend(leg ,'Location','southoutside','FontSize',fs-1,'Box','off','NumColumns', 2);
 axis tight; grid on;
 ylabel('Pwr WF (MW)','FontSize',fs)
 xlabel('Time (s)','FontSize',fs)

@@ -25,7 +25,7 @@ method = 3; %0: DMD ; 1:DMDc; 2:IODMD; 3:EIODMD
 videos = 0; %generate videos
 snapshots = 0; %generate snapshots from simulation data
 koopmanVec = 3; %to add deterministic states to flow field data
-retakePoint = 2;
+retakePoint = 1;
 r = 100;
 
 % Turbine and flow characteristics to be used
@@ -148,7 +148,6 @@ end
 [Inputs_val, Outputs_val, Deterministic_val] = preprocessdmdval(beg, rotSpeed_val,time1_val,rotorAzimuth_val,nacelleYaw_val,pitchmode,pitch_val,scalingfactors,powerGenerator_val,rho,meanvalues); %preprocess information (resample and only relevant data)
 
 
-
 %% Start loop over
 % states1 = Deterministic;
 % statesvalid1 = Deterministic_val;
@@ -268,8 +267,6 @@ for idx = 1: length(noStates)
     plotStruct{idx}.legStr2 =  sprintf('%s; %s; VAF P(T2):%2.2f%%', strRetake,strKoop,a);
 
 end
-
-
 
 
 %% if size(Outputs,1)==2

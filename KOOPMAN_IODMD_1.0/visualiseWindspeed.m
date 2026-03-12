@@ -1,254 +1,176 @@
-clear; close all;
+%% Initialization and Data Loading
+clc; close all;
+clearvars -except QQ_u QQ_v QQ_w x y z;
 
+% Check if wind field data (QQ_u) is already in workspace, otherwise load it
 if exist('QQ_u','var') ~= 1
     parentDir = fileparts(pwd);
-    filename = 'data/yaw_control/U_data_complete_vec_yaw_off.mat'; %directory for matlab file with flow field identification data set
+    % Path to the flow field identification data set (Yaw Off case)
+    filename = 'data/yaw_control/U_data_complete_vec_yaw_off.mat'; 
     load(fullfile(parentDir,filename));
 end
 
+% Create directory for saving figures
 figDir = fullfile(pwd,'figDir');
 if exist(figDir,'dir') ~= 7
     mkdir(figDir);
 end
 
+%% Grid Definition and Downsampling
 plot3D = 0;
-
+% Define indices for spatial dimensions (X=Streamwise, Y=Lateral, Z=Vertical)
 vectempx = 1:550;
 vectempy = 1:111;
 vectempz = 1:99;
 
+% Subsample the grid for cleaner visualization (every 4th sample)
 vecx = vectempx(1:4:end);
 vecy = vectempy(1:4:end);
 vecz = vectempz(1:4:end);
 
-lx = length(vecx);
-% x: Length: 1710m: 138 samples, delta samples 12.39 m
-% 5D = 178 *5: Position
-ly = length(vecy);
-lz = length(vecz);
+lx = length(vecx); ly = length(vecy); lz = length(vecz);
 l = lx*ly*lz;
 
-if plot3D == 1
-    lent=size(QQ_u,2);
+% Extract actual coordinate values based on subsampling
+xx = x(1:4:end); 
+yy = y(1:4:end); 
+zz = z(1:4:end); 
 
-    qq_u4d = reshape(QQ_u,ly,lx,lz,lent);
-    qq_v4d = reshape(QQ_v,ly,lx,lz,lent);
+% Selection ranges for quiver fields (vector plots)
+Xsel1 = 1:(length(xx)-55); 
+Ysel1 = 1:(length(yy)-1); 
+Zsel1 = 1:23;
 
-    % qq_u4d = reshape(QQ_u,YY,XX,ZZ,lent);
-    posT = 178*5/1710 * 138;
-
-    timeVec = [50,100,200];
-    zT = - 1: 11;
-    zT2 = -4 : 3;
-    yT = 0: (ly-1);
-
-    [ZT,YT] = meshgrid(zT,yT);
-    [ZT2,YT2] = meshgrid(zT2,yT);
-
-    XT = posT *ones(size(ZT));
-    XT2 = posT *ones(size(ZT2));
-
-    CO(:,:,1) = ones(size(YT)); % red
-    CO(:,:,2) = zeros(size(YT)); % green
-    CO(:,:,3) = zeros(size(YT));% blue
-
-    CO1(:,:,1) = ones(size(YT2)); % red
-    CO1(:,:,2) = zeros(size(YT2)); % green
-    CO1(:,:,3) = zeros(size(YT2));% blue
-
-
-    for idx = 1: length(timeVec)
-        aTime = timeVec(idx);
-
-        figure(idx+3)
-        subplot(2,1,1)
-        surfc(qq_u4d(:,:,10,aTime));
-        hold on;
-        mesh(XT,YT,ZT,CO);
-        view(1,48)
-        title(sprintf('Wind u at time %d, turbine 2 at 5D = 890',aTime));
-
-        subplot(2,1,2)
-        surfc(qq_v4d(:,:,10,aTime));
-        hold on;
-        mesh(XT2,YT2,ZT2,CO1);
-        title(sprintf('Wind v at time %d, turbine 2 at 5D = 890',aTime));
-        view(1,48)
-
-    end
-
-else
-
-    xx = x(1:4:end); % vecx;
-    yy = y(1:4:end); % vecy;
-    zz = z(1:4:end); % vecz;
-
-    Xsel1 = 1:(length(xx)-55); % For quiver field
-    Ysel1 = 1:(length(yy)-1); % 1:28
-    Zsel1 = 1:23;
-
-    if length(QQ_u) == 51543
-
-        yy = yy(1:1:end-1); %yaw
-        xx = xx(1:1:end-55); %yaw
-        zz = zz(1:1:23); %yaw
-    end
-
-    Y = length(yy);
-    X = length(xx);
-    Z = length(zz);
-
-    Xsel = [1,70,10,50];%1:130;%
-    Ysel = 4: 24; %7:22;%1:28;%
-    Zsel = 10;
-
-    zH = Zsel;
-
-    [Xm_shs,Ym_shs,Zm] = meshgrid(xx-500,(yy-500), zz);
-
-    i = 500;
-    UmeanAbs_sh_u = reshape(double(QQ_u(:,i)),Y,X,Z);
-    UmeanAbs_sh_v = reshape(double(QQ_v(:,i)),Y,X,Z);
-    UmeanAbs_sh_w = reshape(double(QQ_w(:,i)),Y,X,Z);
-
-    % figure;
-    % quiver3(Ym_shs,Xm_shs,Zm,UmeanAbs_sh_v,UmeanAbs_sh_u,UmeanAbs_sh_w);
-
-    UmeanAbs_sh_u2D = UmeanAbs_sh_u(:,:,zH);
-    UmeanAbs_sh_v2D = UmeanAbs_sh_v(:,:,zH);
-    Xm_shs_2D = Xm_shs(:,:,zH);
-    Ym_shs_2D = Ym_shs(:,:,zH);
-    Vmean = (UmeanAbs_sh_u2D.^2 + UmeanAbs_sh_v2D.^2).^(1/2);
-
-
-    %% long/lateral wind at hub height
-    figure(1); %contourf(Xm_shs_2D,Ym_shs_2D,Vmean,"FaceAlpha",0.25);
-
-    fs = 13;
-    contourf(Xm_shs_2D,Ym_shs_2D,Vmean); colormap('sky'); hold on;
-    Xm_shs_2D1 = Xm_shs_2D(Ysel1,Xsel1);
-    Ym_shs_2D1 = Ym_shs_2D(Ysel1,Xsel1);
-    UmeanAbs_sh_u2D1 =  UmeanAbs_sh_u2D(Ysel1,Xsel1);
-    UmeanAbs_sh_v2D1 = UmeanAbs_sh_v2D(Ysel1,Xsel1);
-    quiver(Xm_shs_2D1,Ym_shs_2D1,UmeanAbs_sh_u2D1,UmeanAbs_sh_v2D1,'k')
-
-    posDefault = get(0,'DefaultFigurePosition');
-    set(gcf, 'position', [posDefault(1) - posDefault(3)*0.7,posDefault(2),posDefault(3)*3.1,posDefault(4)]);
-    xlabel('x (m)','FontSize',fs); ylabel('y (m)','FontSize',fs);
-
-    Xm_shs_2Dsel = Xm_shs_2D(Ysel,Xsel);
-    Ym_shs_2Dsel = Ym_shs_2D(Ysel,Xsel);
-    UmeanAbs_sh_u2Dsel =  UmeanAbs_sh_u2D(Ysel,Xsel);
-    UmeanAbs_sh_v2Dsel = UmeanAbs_sh_v2D(Ysel,Xsel);
-
-    quiver(Xm_shs_2Dsel,Ym_shs_2Dsel, UmeanAbs_sh_u2Dsel,UmeanAbs_sh_v2Dsel,...
-        'r','AutoScaleFactor',0.2);
-
-    legend('Wind contour hub height (m/s)','Wind field data points (m/s)','Sparse wind data points (m/s)')
-    set(findall(gcf,'-property','FontSize'),'FontSize',13.5)
-    axis equal;
-
-
-    colorbar();drawnow
-
-    strFig = 'WindData';
-    print(fullfile(figDir,[strFig,'_x']), '-dpng');
-    print(fullfile(figDir,[strFig,'_x']), '-depsc');
-
-    %%
-
-    for idxT = 1:4
-        aSel = Xsel(idxT);
-        strIdxT = num2str(idxT);
-        strIdM = sprintf('%2.1f',((aSel-1)*12.5));
-        UmeanAbs_sh_u2Dcell.T1 = squeeze(UmeanAbs_sh_u(:,aSel,:));
-        UmeanAbs_sh_v2Dcell.T1 = squeeze(UmeanAbs_sh_v(:,aSel,:));
-        UmeanAbs_sh_w2Dcell.T1 = squeeze(UmeanAbs_sh_w(:,aSel,:));
-        Ym_shs_2Dcell.T1 = squeeze(Ym_shs(:,aSel,:));
-        Zm_shs_2Dcell.T1 = squeeze(Zm(:,aSel,:));
-        Vmeancell.T1 = (UmeanAbs_sh_u2Dcell.T1.^2 + UmeanAbs_sh_v2Dcell.T1.^2 + UmeanAbs_sh_w2Dcell.T1.^2).^(1/2);
-
-        figure(idxT + 1);
-        contourf(Ym_shs_2Dcell.T1,Zm_shs_2Dcell.T1,Vmeancell.T1);
-        colormap('sky'); hold on;
-
-        Ym_shs_2Dcell.T11 = Ym_shs_2Dcell.T1(Ysel1,Zsel1);
-        Zm_shs_2Dcell.T11 = Zm_shs_2Dcell.T1(Ysel1,Zsel1);
-        UmeanAbs_sh_v2Dcell.T11 =  UmeanAbs_sh_v2Dcell.T1(Ysel1,Zsel1);
-        UmeanAbs_sh_w2Dcell.T11 = UmeanAbs_sh_w2Dcell.T1(Ysel1,Zsel1);
-
-        quiver(Ym_shs_2Dcell.T11,Zm_shs_2Dcell.T11,...
-            UmeanAbs_sh_v2Dcell.T11,UmeanAbs_sh_w2Dcell.T11,'k')
-        axis equal;
-
-        Zm_shs_2Dsel_cell.T1 = Zm_shs_2Dcell.T1(Ysel,Zsel);
-        Ym_shs_2Dsel_cell.T1 = Ym_shs_2Dcell.T1(Ysel,Zsel);
-        UmeanAbs_sh_v2Dsel_cell.T1 = UmeanAbs_sh_v2Dcell.T1(Ysel,Zsel);
-        UmeanAbs_sh_w2Dsel_cell.T1 = UmeanAbs_sh_w2Dcell.T1(Ysel,Zsel);
-
-        quiver(Ym_shs_2Dsel_cell.T1,Zm_shs_2Dsel_cell.T1, ...
-            UmeanAbs_sh_v2Dsel_cell.T1,UmeanAbs_sh_w2Dsel_cell.T1,...
-            'r','AutoScaleFactor',0.75);
-        xlabel('y (m)','FontSize',fs); ylabel('z (m)','FontSize',fs);
-        colorbar(); drawnow;
-
-        if idxT < 3
-            legend(['Wind contour WT',strIdxT,' (m/s)'],'Wind field data (m/s)', ['Wind at WT',strIdxT,' data (m/s)'])
-        else
-            lgd = legend(['Wind contour, ',strIdM,' m behind WT1 (m/s)'],'Wind field data (m/s)', 'Wind data (m/s)', 'Location', 'northeast');
-            % 2. Get the current position [left, bottom, width, height]
-            currentPos = lgd.Position;
-
-            % 3. Move it slightly to the right (e.g., add 0.05 to the 'left' value)
-            % These values are normalized (0 to 1) relative to the figure window
-            currentPos(1) = currentPos(1) + 0.015;
-
-            % 4. Apply the new position
-            lgd.Position = currentPos;
-        end
-
-        set(findall(gcf,'-property','FontSize'),'FontSize',fs)
-        axis equal;
-
-        strFig = 'WindData';
-        if idxT < 3
-            print(fullfile(figDir,[strFig,'_T',num2str(idxT)]), '-dpng');
-            print(fullfile(figDir,[strFig,'_T',num2str(idxT)]), '-depsc');
-        else
-            print(fullfile(figDir,[strFig,'_',num2str(idxT)]), '-dpng');
-            print(fullfile(figDir,[strFig,'_',num2str(idxT)]), '-depsc');
-        end
-
-    end
+% Dimensions adjustment for specific datasets (Yaw correction logic)
+if length(QQ_u) == 51543
+    yy = yy(1:1:end-1);
+    xx = xx(1:1:end-55);
+    zz = zz(1:1:23);
 end
 
+Y = length(yy); X = length(xx); Z = length(zz);
 
-return;
+% Define specific slices and simulated measurement points (e.g., LiDAR scans)
+Xsel = [1,70,10,50]; % X-indices: WT1, near wake, far wake, upstream of WT2
+Ysel = 4:24;         % Lateral selection for sparse data
+Zsel = 10;           % Index for Hub Height
+zH = Zsel;
 
-% c = colorbar();drawnow
-%     alphaVal = 0.25;
-%     cdata = c.Face.Texture.CData;  % Get the color data of the object that correponds to the colorbar
-%     cdata(end,:) = uint8(alphaVal * cdata(end,:)); % Change the 4th channel (alpha channel) to 10% of it's initial value (255)
-%     c.Face.Texture.ColorType = 'truecoloralpha'; % Ensure that the display respects the alpha channel
-%     c.Face.Texture.CData = cdata;  % Update the color data with the new transparency information
+% Create 3D meshgrid (shifted by 500m for centering)
+[Xm_shs,Ym_shs,Zm] = meshgrid(xx-500,(yy-500), zz);
 
+% Reshape velocity components (u, v, w) for a specific time step (i=500)
+i = 500;
+UmeanAbs_sh_u = reshape(double(QQ_u(:,i)),Y,X,Z);
+UmeanAbs_sh_v = reshape(double(QQ_v(:,i)),Y,X,Z);
+UmeanAbs_sh_w = reshape(double(QQ_w(:,i)),Y,X,Z);
 
+% Extract 2D Plane at Hub Height for Plan View
+UmeanAbs_sh_u2D = UmeanAbs_sh_u(:,:,zH);
+UmeanAbs_sh_v2D = UmeanAbs_sh_v(:,:,zH);
+Xm_shs_2D = Xm_shs(:,:,zH);
+Ym_shs_2D = Ym_shs(:,:,zH);
+Vmean = (UmeanAbs_sh_u2D.^2 + UmeanAbs_sh_v2D.^2).^(1/2); % Magnitude
 
-figure(1),surfc(qq_u4d(:,:,1,500));
-xlabel('X(1 point =4m)')
-ylabel('Y(1 point =4m)')
-zlabel('Wind velocity')
-title('z=4m,time step 500sec')
-figure(2),surfc(qq_u4d(:,:,1,700));
-figure(3),surfc(qq_u4d(:,:,12,500));
-xlabel('X(1 point =4m)')
-ylabel('Y(1 point =4m)')
-zlabel('Wind velocity')
-title('z=4m,time step 500sec')
+% Prepare data for Plan View Vektor plots
+Xm_shs_2D1 = Xm_shs_2D(Ysel1,Xsel1);
+Ym_shs_2D1 = Ym_shs_2D(Ysel1,Xsel1);
+U_u1 =  UmeanAbs_sh_u2D(Ysel1,Xsel1);
+U_v1 = UmeanAbs_sh_v2D(Ysel1,Xsel1);
 
-% z_dot75 = round(size(qq_u4d,3)*0.75); %17
-% figure(4),surfc(qq_u4d(:,:,z_dot75,500));
-%round(ZZ*0.25);
-%figure(5),surfc(qq_u4d(:,:,round(ZZ*0.25),500));
+Xm_shs_2Dsel = Xm_shs_2D(Ysel,Xsel);
+Ym_shs_2Dsel = Ym_shs_2D(Ysel,Xsel);
+U_usel = UmeanAbs_sh_u2D(Ysel,Xsel);
+U_vsel = UmeanAbs_sh_v2D(Ysel,Xsel);
 
-%qq_u4d=NaN(lx,ly,lz,size(QQ_u(2)))
+%% Plot 1: Plan View (X-Y Plane) at Hub Height
+figure(1);
+fs = 15; % Font size
+set(gcf, 'Position', [100, 100, 1800, 450]); 
+t1 = tiledlayout(1, 1, 'TileSpacing', 'none', 'Padding', 'none'); 
+nexttile;
+
+% 1. Plot the Wind Contour (Ground Truth)
+contourf(Xm_shs_2D, Ym_shs_2D, Vmean, 20, 'LineStyle', 'none'); 
+colormap('sky'); clim([2 9.5]); 
+hold on;
+
+% 2. Plot Dense Wind Field Data Points (Black Quivers)
+quiver(Xm_shs_2D1, Ym_shs_2D1, U_u1, U_v1, 'k', 'LineWidth', 0.5);
+
+% 3. Plot Sparse Measurement Points (Red Quivers - simulating LiDAR/Sensors)
+hSparse = quiver(Xm_shs_2Dsel, Ym_shs_2Dsel, U_usel, U_vsel, ...
+    'r', 'AutoScaleFactor', 0.2, 'LineWidth', 1.2);
+
+% Formatting
+axis equal; axis tight; grid on;
+xlabel('x (m)', 'FontSize', fs + 1); ylabel('y (m)', 'FontSize', fs + 1);
+set(gca, 'FontSize', fs);
+
+% Legend and Output
+lgd = legend('Wind contour hub height (m/s)', ...
+             'Wind field data points (m/s)', ...
+             'Sparse wind data points (m/s)');
+lgd.FontSize = fs;
+colorbar(); drawnow;
+
+strFig = 'WindData';
+print(fullfile(figDir,[strFig,'_x']), '-dpng');
+print(fullfile(figDir,[strFig,'_x']), '-depsc');
+
+%% Plot 2: Horizontal Tiled Layout for Cross-Sectional (Y-Z) Views
+figYZ = figure('Position', [100, 100, 1800, 450]); 
+t = tiledlayout(1, 4, 'TileSpacing', 'compact', 'Padding', 'tight');
+
+% Titles for different downstream locations
+titles = {'WT1 Rotor (index 1)', '112.5 m behind WT1 (index 10)', ...
+          '612.5 m behind WT1 (index 50)', '27.5 m in front of WT2 Rotor (index 70)'};
+p2 = 1;
+
+for idxT = 1:4
+    aSel = Xsel(idxT); % Select X-position
+    ax = nexttile;
+    hold on;
+    
+    % Data Extraction for Y-Z Slices
+    U_u = squeeze(UmeanAbs_sh_u(:,aSel,:));
+    U_v = squeeze(UmeanAbs_sh_v(:,aSel,:));
+    U_w = squeeze(UmeanAbs_sh_w(:,aSel,:));
+    Y_p = squeeze(Ym_shs(:,aSel,:));
+    Z_p = squeeze(Zm(:,aSel,:));
+    V_mag = sqrt(U_u.^2 + U_v.^2 + U_w.^2);
+    
+    % 1. Contour Plot (Velocity Magnitude)
+    contourf(Y_p, Z_p, V_mag, 20, 'LineStyle', 'none');
+    colormap(ax, 'sky'); clim([2 9.5]);
+    
+    % 2. Dense Local Wind Field (Black Quivers)
+    quiver(Y_p(1:p2:end, 1:p2:end), Z_p(1:p2:end, 1:p2:end), ...
+           U_v(1:p2:end, 1:p2:end), U_w(1:p2:end, 1:p2:end), 'k', 'LineWidth', 0.5);
+    
+    % 3. Sparse Hub-Height Measurements (Red Quivers)
+    quiver(Y_p(Ysel, Zsel), Z_p(Ysel, Zsel), ...
+                     U_v(Ysel, Zsel), U_w(Ysel, Zsel), 'r', ...
+                     'AutoScaleFactor', 0.75, 'LineWidth', 1.5);
+    
+    % 4. Rotor Disk Guide (178m Diameter circle centered at 119m hub height)
+    th = linspace(0, 2*pi, 100);
+    plot(89*cos(th), 89*sin(th) + 119, 'k--', 'LineWidth', 1.2);
+    
+    % Formatting per tile
+    title(titles{idxT}, 'FontSize', fs + 1);
+    xlabel('y (m)');
+    if idxT == 1, ylabel('z (m)'); else yticklabels([]); end
+    axis equal; grid on;
+    xlim([-170 170]); ylim([0 300]);
+    set(gca, 'FontSize', fs);
+end
+
+% Shared Visual Elements
+cb = colorbar;
+cb.FontSize = fs;
+
+% Export final combined Y-Z slices
+strFig = 'WindData_Horizontal_Slices';
+print(fullfile(figDir, strFig), '-dpng', '-r300');
+print(fullfile(figDir,strFig), '-depsc');
