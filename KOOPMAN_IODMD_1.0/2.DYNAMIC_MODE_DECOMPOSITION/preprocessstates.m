@@ -1,6 +1,5 @@
 function [statesScaled,meansteadystate,scalingfactor] = preprocessstates(states,scalingfactor)
 
-
 n = size(states, 1) / 3;
 U = states(1:n, :);
 V = states(n+1:2*n, :);

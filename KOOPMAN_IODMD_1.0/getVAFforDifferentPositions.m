@@ -1,7 +1,7 @@
 function VAF_P2 = getVAFforDifferentPositions(Xsel)
 
 if ~nargin
-    Xsel = [1,10,50,70];
+    Xsel = [1,70]; %[1,10,50,70];
 end
 
 maindir = [pwd,'/matlab_code_tests/'];
@@ -43,11 +43,11 @@ load('DataSetTurbineUsed.mat','rotSpeed*','nacelleYaw*','time1*','rotorAzimuth*'
 [~,~,~,~,~,~,QQ_u1] = retakepoints_at_turbine(QQ_u,x,y,z,Decimate,Xsel);
 [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_u1] = retakepoints_at_turbine(valid.QQ_u,x,y,z,Decimate,Xsel);
 
-% [~,~,~,~,~,~,QQ_v1] = retakepoints_at_turbine(QQ_v,x,y,z,Decimate,Xsel);
-% [~,~,~,~,~,~,QQ_w1] = retakepoints_at_turbine(QQ_w,x,y,z,Decimate,Xsel);
-%
-% [~,~,~,~,~,~,valid.QQ_v1] = retakepoints_at_turbine(valid.QQ_v,x,y,z,Decimate,Xsel);
-% [~,~,~,~,~,~,valid.QQ_w1] = retakepoints_at_turbine(valid.QQ_w,x,y,z,Decimate,Xsel);
+[~,~,~,~,~,~,QQ_v1] = retakepoints_at_turbine(QQ_v,x,y,z,Decimate,Xsel);
+[~,~,~,~,~,~,QQ_w1] = retakepoints_at_turbine(QQ_w,x,y,z,Decimate,Xsel);
+
+[~,~,~,~,~,~,valid.QQ_v1] = retakepoints_at_turbine(valid.QQ_v,x,y,z,Decimate,Xsel);
+[~,~,~,~,~,~,valid.QQ_w1] = retakepoints_at_turbine(valid.QQ_w,x,y,z,Decimate,Xsel);
 
 
 %
@@ -61,15 +61,20 @@ load('DataSetTurbineUsed.mat','rotSpeed*','nacelleYaw*','time1*','rotorAzimuth*'
 % Define states to be used for DMD
 %states=QQ_u1(:,(begin-beg)+1:end); % define states: first hypothesis
 states_u = QQ_u1(:,(itsf-1)*0.1:end); %fluid flow as states, identification data set
-%states_v = QQ_v1(:,(itsf-1)*0.1:end); states_w = QQ_w1(:,(itsf-1)*0.1:end);
-states0 = states_u; % states_v; states_w];
+states_v = QQ_v1(:,(itsf-1)*0.1:end); states_w = QQ_w1(:,(itsf-1)*0.1:end);
+states0 = [states_u; states_v; states_w];
 statesvalid_u = valid.QQ_u1(:,(itsf-1)*0.1:end); %fluid flow as states, validaiton data set for comparison
-%statesvalid_v = valid.QQ_v1(:,(itsf-1)*0.1:end); %fluid flow as states, identification data set
-%statesvalid_w = valid.QQ_v1(:,(itsf-1)*0.1:end);
-statesvalid0 = statesvalid_u; %statesvalid_v; statesvalid_w];
+statesvalid_v = valid.QQ_v1(:,(itsf-1)*0.1:end); %fluid flow as states, identification data set
+statesvalid_w = valid.QQ_v1(:,(itsf-1)*0.1:end);
+statesvalid0 = [statesvalid_u; statesvalid_v; statesvalid_w];
 
-[states1,~,scalingfactor] = preprocessstates(states0); %remove meanflow or other pre-processing techniques to experiment
-[statesvalid1]=preprocessstates(statesvalid0,scalingfactor);
+[states1all,~,scalingfactor] = preprocessstates(states0); %remove meanflow or other pre-processing techniques to experiment
+[statesvalid1all]=preprocessstates(statesvalid0,scalingfactor);
+
+noStateUV = 1/3 *size(states1all,1); %u and v selected
+   
+states1 = states1all(1:noStateUV,:);
+statesvalid1 = statesvalid1all(1:noStateUV,:);
 
 
 %% (2) DYNAMIC MODE DECOMPOSITION
@@ -89,8 +94,6 @@ statesvalid = [statesvalid1; statesvalid1.^2; statesvalid1.^3];
 n = size(states,1);
 r = min(r,n); %define truncation level for Singular Value Decomposition
 
-states=double(states); %ensure states are double and not single matrix
-statesvalid=double(statesvalid); %ensure correpsonding vliadation states are double and not single matrix
 f = '';
 plotView = 0; plotOn = 0;
 [sys_red,~,U,~,~,method,~,~,~,dirdmd,~]=dynamicmodedecomposition(states,Inputs, Outputs, Deterministic,method,r,maindir,f,dt,plotView,plotOn);

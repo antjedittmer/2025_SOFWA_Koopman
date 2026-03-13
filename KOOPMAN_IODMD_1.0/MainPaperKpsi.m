@@ -78,13 +78,14 @@ if retakePoint == 0
 
 elseif retakePoint == 1
 
-    % wind at turbine hubheight 
+    % wind at turbine hubheight
+    Xsel = [1,70];
     strRetake = 'Turbine wind meas.'; %'Sparse wind meas.'; %'Turbine wind meas.';
-    [~,~,~,~,~,~,QQ_u1] = retakepoints_at_turbine(QQ_u,x,y,z,Decimate);
-    [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_u1] = retakepoints_at_turbine(valid.QQ_u,x,y,z,Decimate);
+    [~,~,~,~,~,~,QQ_u1] = retakepoints_at_turbine(QQ_u,x,y,z,Decimate,Xsel);
+    [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_u1] = retakepoints_at_turbine(valid.QQ_u,x,y,z,Decimate,Xsel);
 
-    [~,~,~,~,~,~,QQ_v1] = retakepoints_at_turbine(QQ_v,x,y,z,Decimate);
-    [~,~,~,~,~,~,QQ_w1] = retakepoints_at_turbine(QQ_w,x,y,z,Decimate);
+    [~,~,~,~,~,~,QQ_v1] = retakepoints_at_turbine(QQ_v,x,y,z,Decimate,Xsel);
+    [~,~,~,~,~,~,QQ_w1] = retakepoints_at_turbine(QQ_w,x,y,z,Decimate,Xsel);
 
     [~,~,~,~,~,~,valid.QQ_v1] = retakepoints_at_turbine(valid.QQ_v,x,y,z,Decimate);
     [~,~,~,~,~,~,valid.QQ_w1] = retakepoints_at_turbine(valid.QQ_w,x,y,z,Decimate);
@@ -92,7 +93,7 @@ elseif retakePoint == 1
 elseif retakePoint == 2
 
     % wind at turbine hub height and in between turbines
-    Xsel = [1,10,50,70];
+    Xsel = [1,10,51,70];
     strRetake = 'Sparse wind meas.'; %'Turbine wind meas.';
     [~,~,~,~,~,~,QQ_u1] = retakepoints_at_turbine(QQ_u,x,y,z,Decimate,Xsel);
     [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_u1] = retakepoints_at_turbine(valid.QQ_u,x,y,z,Decimate,Xsel);
@@ -134,11 +135,11 @@ statesvalid_w = valid.QQ_v1(:,(itsf-1)*0.1:end);
 statesvalid0 = [statesvalid_u; statesvalid_v; statesvalid_w];
 
 if detrendingstates == 1
-    [states1,meansteadystate,scalingfactor] = preprocessstates(states0); %remove meanflow or other pre-processing techniques to experiment
-    [statesvalid1]=preprocessstates(statesvalid0,scalingfactor);
+    [states1all,meansteadystate,scalingfactor] = preprocessstates(states0); %remove meanflow or other pre-processing techniques to experiment
+    [statesvalid1all]=preprocessstates(statesvalid0,scalingfactor);
 else
-    states1 = states0;
-    statesvalid1 = statesvalid0;
+    states1all = states0;
+    statesvalid1all = statesvalid0;
 end
 
 %% (2) DYNAMIC MODE DECOMPOSITION
@@ -151,7 +152,13 @@ end
 %% Start loop over
 % states1 = Deterministic;
 % statesvalid1 = Deterministic_val;
-noStateUV = 1/3 *size(states1,1); %u and v selected
+noStateUV = 1/3 *size(states1all,1); %u and v selected
+strKoop = 'Lin.';
+noStateUV = 1/3 *size(states1all,1); %u and v selected
+    noStateUV = 1/3 * size(states1all,1); %u and v selected
+    states1 = states1all(1:noStateUV,:);
+    statesvalid1 = statesvalid1all(1:noStateUV,:);
+
 PolyLiftingFunction = 0;
 noStates = [4,6,12,24];
 koopman0 = 0;
@@ -161,59 +168,59 @@ for idx = 1: length(noStates)
 
     %% states from wind flow field
     if koopman0 == 1 % linear + quadratic + cubic
-        statesWind = [states1(1:noStateUV,:); states1(1:noStateUV,:).^2];
-        statesWindvalid = [statesvalid1(1:noStateUV,:); statesvalid1(1:noStateUV,:).^2];
+        statesWind = [states1; states1.^2];
+        statesWindvalid = [statesvalid1; statesvalid1.^2];
         strKoop = 'Lin. + quad.';
 
     elseif koopman0 == 2 % linear + cubic
 
-        statesWind = [states1(1:noStateUV,:); states1(1:noStateUV,:).^2; states1(1:noStateUV,:).^3]; %[states_u; states_u.^2; statesvalid_u.^3];
-        statesWindvalid = [statesvalid1(1:noStateUV,:); statesvalid1(1:noStateUV,:).^2; statesvalid1(1:noStateUV,:).^3];
+        statesWind = [states1; states1.^2; states1.^3]; %[states_u; states_u.^2; statesvalid_u.^3];
+        statesWindvalid = [statesvalid1; statesvalid1.^2; statesvalid1.^3];
         strKoop = sprintf('Lin, quad. + cubic, n_{koop} = %d',noState);
 
     else
-        statesWind = [states1(1:noStateUV,:)];
-        statesWindvalid = [statesvalid1(1:noStateUV,:)];
+        statesWind = [states1];
+        statesWindvalid = [statesvalid1];
         strKoop = 'Lin.';
 
     end
 
- structPrev.Ur1_prev1 = Deterministic(1,1);
-        structPrev.Ur2_prev1 = Deterministic(2,1);
-        structPrev.dUr1_prev1 = 0;
-        structPrev.dUr2_prev1 = 0;
-        structPrev.M1(1) = Deterministic(1,1); % Moving mean
-        structPrev.M2(1) = Deterministic(2,1);
-        structPrev.k = 1;
-        
-        statesUr = nan(noState,size(Deterministic,2));
-        for idxK = 1: length(Deterministic)
-            [statesUr(:,idxK),stateNameUr,structPrev]  = K_psi_3D(Deterministic(:,idxK),noState,structPrev,PolyLiftingFunction);
-        end
-        
-        % windAtTurbine = [QQ_u1; QQ_v1];
-        % statesUV = koopmanstateextensionWFSim(windAtTurbine,poly,n);
-        % stateNameUV = regexprep(stateNameUr,{'Ur1','Ur2','M'},{'u','v','Muv'});
-        states = [statesWind;statesUr(3:noState,:)]; %[statesUr]; %;statesUV];
-        stateName = [stateNameUr]; %,';',stateNameUV];
+    structPrev.Ur1_prev1 = Deterministic(1,1);
+    structPrev.Ur2_prev1 = Deterministic(2,1);
+    structPrev.dUr1_prev1 = 0;
+    structPrev.dUr2_prev1 = 0;
+    structPrev.M1(1) = Deterministic(1,1); % Moving mean
+    structPrev.M2(1) = Deterministic(2,1);
+    structPrev.k = 1;
 
-        structPrev.Ur1_prev1 = Deterministic_val(1,1);
-        structPrev.Ur2_prev1 = Deterministic_val(2,1);
-        structPrev.dUr1_prev1 = 0;
-        structPrev.dUr2_prev1 = 0;
-        structPrev.M1(1) = Deterministic_val(1,1); % Moving mean
-        structPrev.M2(1) = Deterministic_val(2,1);
-        structPrev.k = 1;
-        statesvalidUr = nan(noState,size(Deterministic_val,2));
-        for idxK = 1: length(Deterministic_val)
-            [statesvalidUr(:,idxK),stateNameUr,structPrev]  = K_psi_3D(Deterministic_val(:,idxK),noState,structPrev,PolyLiftingFunction);
-        end
-        % windAtTurbineVal = [valid.QQ_u1; valid.QQ_v1];
-        % statesUV_val = koopmanstateextensionWFSim(windAtTurbineVal,poly,n);
-        statesvalid = [statesWindvalid; statesvalidUr(3:noState,:)]; %;statesUV_val];
+    statesUr = nan(noState,size(Deterministic,2));
+    for idxK = 1: length(Deterministic)
+        [statesUr(:,idxK),stateNameUr,structPrev]  = K_psi_3D(Deterministic(:,idxK),noState,structPrev,PolyLiftingFunction);
+    end
+
+    % windAtTurbine = [QQ_u1; QQ_v1];
+    % statesUV = koopmanstateextensionWFSim(windAtTurbine,poly,n);
+    % stateNameUV = regexprep(stateNameUr,{'Ur1','Ur2','M'},{'u','v','Muv'});
+    states = [statesWind;statesUr(3:noState,:)]; %[statesUr]; %;statesUV];
+    stateName = [stateNameUr]; %,';',stateNameUV];
+
+    structPrev.Ur1_prev1 = Deterministic_val(1,1);
+    structPrev.Ur2_prev1 = Deterministic_val(2,1);
+    structPrev.dUr1_prev1 = 0;
+    structPrev.dUr2_prev1 = 0;
+    structPrev.M1(1) = Deterministic_val(1,1); % Moving mean
+    structPrev.M2(1) = Deterministic_val(2,1);
+    structPrev.k = 1;
+    statesvalidUr = nan(noState,size(Deterministic_val,2));
+    for idxK = 1: length(Deterministic_val)
+        [statesvalidUr(:,idxK),stateNameUr,structPrev]  = K_psi_3D(Deterministic_val(:,idxK),noState,structPrev,PolyLiftingFunction);
+    end
+    % windAtTurbineVal = [valid.QQ_u1; valid.QQ_v1];
+    % statesUV_val = koopmanstateextensionWFSim(windAtTurbineVal,poly,n);
+    statesvalid = [statesWindvalid; statesvalidUr(3:noState,:)]; %;statesUV_val];
 
 
-       
+
     n = size(states,1);
     r = min(r,n); %define truncation level for Singular Value Decomposition
 
@@ -273,7 +280,7 @@ end
 % fid = fopen(['VAF_',strrep(filenameId,'.mat',''),'.txt'],'w');
 % fprintf(fid,'No K.\t PT1(Id)\t PT1(Val)\t\t PT2(Id)\t PT2(Val)\n');
 % else
-fid = fopen(['VAF_retake_',num2str(retakePoint),'_Koop.txt'],'w');
+fid = fopen(['aVAF_retake_',num2str(retakePoint),'_Koop.txt'],'w');
 %fprintf(fid,'No K.\t PT1(Id)\t PT1(Val)\t PT2(Id)\t PT2(Val)\t FT1(Id)\t FT1(Val)\t\t FT2(Id)\t FT2(Val)\n');
 
 fprintf(fid,'Data subset & Lifting functions & States \\zeta & Selected States \\tilde{\\zeta} & VAF(P_1) & VAF(P_2)\n');
