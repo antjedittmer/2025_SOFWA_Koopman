@@ -50,7 +50,6 @@ else
     end
 end
 
-
 % --- Print out the maxium
 [maxVAF,idxVAF] = max(VAF_P2);
 fprintf('Max VAF %2.2f over combinations %d with indices:\n', maxVAF,length(combinationsMatrix))
@@ -75,6 +74,7 @@ fprintf('%d ',combinationsMatrix_1_70(idxVAF2,:))
 fprintf('\n\n');
 
 
+fprintf('Number positions with VAF larger than the wind field %d\n', sum(VAF_P2(idx1)  > 90.87))
 
 
 
