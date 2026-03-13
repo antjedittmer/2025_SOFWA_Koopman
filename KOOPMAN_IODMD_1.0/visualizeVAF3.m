@@ -25,15 +25,18 @@ plot(t,simPwr/10^6,'color',0.5 *ones(1,3),'LineWidth',1.5) ; hold on;
 
 leg{1} = 'Simulated power SOFWA verification data';
 
-cl1 = {[0,0,1]; [0,0.8,0];[0,0.4,0]};
+
+cl1 = {[0,0,1]; [0,0.6,0];[0,0.6,0]};
 ls = {'-','--','-.',':'};
-lw = 0.75;
+
 
 vec = [1,2,4];
 vec2 =[1,3]; %1:3;
 
+lwVec =[1*ones(2,1); 1.5*ones(3,1)]; % line width
 for sidx = vec2 % length(plotStruct)
     idx = vec(sidx);
+    lw = lwVec(sidx);
     simPwr = plotStruct{idx}.ysim_val(1:end-1,idx0)* scalingfactors(idx0) + meanvalues(idx0);
     plot(t,simPwr/10^6,'color', cl1{sidx},'linestyle',ls{sidx},'LineWidth',lw); % idx/2*[0,0,1]) ; hold on;
     leg{sidx + 1} = plotStruct{idx}.(legStr);
@@ -48,10 +51,12 @@ nleg = length(leg);
 cl1 = {[1,0,0]; 0*[1,1,1]; [1,0,1]};
 
 vec = [1,2,length(plotStruct)];
+lwVec =[1*ones(1,1); 1.5*ones(3,1)]; % line width
 for sidx = vec2 % length(plotStruct)
     idx = vec(sidx);
+    lw = lwVec(sidx);
     simPwr =  plotStruct{idx}.ysim_val(1:end-1,idx0) * scalingfactors(idx0) + meanvalues(idx0);
-    plot(t,simPwr/10^6,'color', cl1{sidx},'linestyle',ls{sidx}); % idx/2*[0,0,1]) ; hold on;
+    plot(t,simPwr/10^6,'color', cl1{sidx},'linestyle',ls{sidx},'LineWidth',lw); % idx/2*[0,0,1]) ; hold on;
     leg{sidx + nleg} = plotStruct{idx}.(legStr);
 end
 

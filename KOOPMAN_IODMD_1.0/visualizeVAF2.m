@@ -25,7 +25,7 @@ plot(t,simPwr,'color',0.5 *ones(1,3),'LineWidth',1.5) ; hold on;
 
 leg{1} = 'Simulated power SOFWA verification data';
 
-cl1 = {[0,0,1]; [0,0.8,0];[0,0.4,0]};
+cl1 = {[0,0,1]; [0,0.6,0];[0,0.6,0]};
 ls = {'-','--','-.',':'};
 lw = 0.75;
 

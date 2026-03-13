@@ -9,16 +9,16 @@ end
 
 load('DataSetScaling.mat', 'scalingfactors','meanvalues');
 
-setTurbine = 0;
+setTurbine = 1;
+
+datDir = 'datOutputDir';
 
 if setTurbine == 1
-    matFile0 = 'simAll1_plotStruct_resampledOriginal.mat';
-    matFile1 = 'simAll1_plotStruct_resampledOriginal_Kpsi148.mat';
-
+    matFile0 = fullfile(datDir,'simAll1_plotStruct_long70.mat'); %'simAll1_plotStruct_resampledOriginal.mat';
+    matFile1 = fullfile(datDir,'simAll1_plotStruct_resampledOriginal_Kpsi24.mat'); %';
 else
-
-    matFile0 = 'simAll0_plotStruct_resampledOriginal.mat'; %'simAll0_plotStruct.mat'
-    matFile1 = 'simAll2_plotStruct_resampledOriginal.mat'; %'simAll1_plotStruct_resampledOriginal.mat'; %,
+    matFile0 = fullfile(datDir,'simAll0_plotStruct.mat'); %'simAll0_plotStruct_resampledOriginal.mat'; %'simAll0_plotStruct.mat'
+    matFile1 = fullfile(datDir,'simAll2_plotStruct_long70.mat'); %'simAll2_plotStruct_resampledOriginal.mat'; %'simAll1_plotStruct_resampledOriginal.mat'; %,
 end
 
 load(matFile0,'plotStruct');
@@ -35,12 +35,11 @@ t0 = 0:dT: length(simPwrRef)*dT;
 %% Create one figure with four subplots
 figure('Name','AllResults','NumberTitle','off');
 pos0 = get(0,'defaultFigurePosition');
-set(gcf,"Position",[pos0(1), pos0(2)- 0.5*pos0(4), pos0(3)*1.15,1.7*pos0(4)])
+set(gcf,"Position",[pos0(1), pos0(2)- 0.5*pos0(4), pos0(3)*1,1.7*pos0(4)])
 
 tiledlayout(7, 1, 'TileSpacing', 'compact', 'Padding', 'compact');
 
 fs = 12; % font size for all plots
-lw = 0.75; % line width
 
 %% --- Subplot 1: Non-scaled yaw input (converted to degrees) ---
 nexttile;
@@ -60,7 +59,7 @@ xticklabels([]); % Removes X-axis labels to save space
 %% --- Subplot 2: Power comparison PT1(Simulated vs Reference) ---
 nexttile([2 1]);
 
-visualizeVAF3(1,plotStruct,matFile1,scalingfactors,meanvalues) 
+visualizeVAF3(1,plotStruct,matFile1,scalingfactors,meanvalues);
 xticklabels([]); % Removes X-axis labels to save space
 
 
@@ -75,35 +74,40 @@ nexttile([2 1]);
 
 plot(t, simPwrRef,'Color',0.5*ones(1,3),'LineWidth',1.5); hold on;
 
-cl1 = {[0,0,1]; [0,0.8,0]; [0,0.4,0]};
+cl1 = {[0,0,1]; [0,0.6,0]; [0,0.6,0]};
 ls = {'-','--','-.',':'};
 vec = [1,2,4];
 RMSEvec = nan(6,1);
 leg{1} = 'Simulated Power';
 
+lwVec =[1*ones(2,1); 1.5*ones(3,1)]; % line width
 for sidx = vec2
     idx = vec(sidx);
+    lw = lwVec(sidx);
     simPwr1 = plotStruct{idx}.ysim_val(1:end,1) * scalingfactors(1) + meanvalues(1);
     simPwr2 = plotStruct{idx}.ysim_val(1:end,2) * scalingfactors(2) + meanvalues(2);
     simPwr = (simPwr1 + simPwr2)/10^6;
     RMSEvec(sidx) = sqrt(mean((simPwr - simPwrRef').^2));
     plot(t,simPwr,'Color',cl1{sidx},'LineStyle',ls{sidx},'LineWidth',lw);
-    leg{end+1} = strrep(strrep(plotStruct{idx}.legStr2,':',': '), 'VAF P(T2)', 'VAF(P_2)');
+    leg{end+1} = strrep(strrep(plotStruct{idx}.legStr2,':',': '), 'VAF P(T2)', 'VAF(P_2)'); %#ok<SAGROW>
 end
 
 load(matFile1,'plotStruct');
 cl2 = {[1,0,0]; [0,0,0]; [1,0,1]};
 vec = [1,2,length(plotStruct)];
 
+lwVec =[1*ones(2,1); 1.5*ones(3,1)]; % line width
 for sidx = vec2
     idx = vec(sidx);
+    lw = lwVec(sidx);
     simPwr1 = plotStruct{idx}.ysim_val(1:end,1) * scalingfactors(1) + meanvalues(1);
     simPwr2 = plotStruct{idx}.ysim_val(1:end,2) * scalingfactors(2) + meanvalues(2);
     simPwr = (simPwr1 + simPwr2)/10^6;
     RMSEvec(sidx+3) = sqrt(mean((simPwr - simPwrRef').^2));
     plot(t, simPwr,'Color', cl2{sidx}, 'LineStyle',ls{sidx}, 'LineWidth',lw);
-    leg{end+1} = strrep(strrep(strrep(strrep(strrep(plotStruct{idx}.legStr2,':',': '),'meas.',''),'wind ','wind'),'VAF P(T2)', 'VAF(P_2)'),'n_{koop}','n_{g{\omega}}');
+    leg{end+1} = strrep(strrep(strrep(strrep(strrep(plotStruct{idx}.legStr2,':',': '),'meas.',''),'wind ','wind'),'VAF P(T2)', 'VAF(P_2)'),'n_{koop}','n_{g{\omega}}'); %#ok<SAGROW>
 end
+axis tight; grid on;
 
 % 1) Remove the numeric value and % after 'VAF(P_2):'
 leg_clean = regexprep(leg, '(VAF\(P_2\):)\s*[0-9.]+%', '$1');
@@ -112,10 +116,11 @@ leg_clean = regexprep(leg, '(VAF\(P_2\):)\s*[0-9.]+%', '$1');
 leg_clean = regexprep(leg_clean, '\s{2,}', ' ');
 
 leg_clean = strrep(strrep(strrep(leg_clean,'; VAF(P_2):',''),' meas',''),'wind.','wind');
-leg_clean = strrep(leg_clean,'wind', 'meas.');
+%leg_clean = strrep(leg_clean,'wind', 'meas.');
+leg_clean = strrep(leg_clean, 'All wind', 'Wind field');
+leg_clean = strrep(leg_clean, 'n_g', 'n_{g\omega}');
 
-
-legend(leg ,'Location','southoutside','FontSize',fs-1,'Box','off','NumColumns', 2);
+legend(leg_clean,'Location','southoutside','FontSize',fs-1,'Box','off','NumColumns',2);
 axis tight; grid on;
 ylabel('Pwr WF (MW)','FontSize',fs)
 xlabel('Time (s)','FontSize',fs)
@@ -127,7 +132,8 @@ set(gcf,'PaperUnits','centimeters','PaperPosition',[0 0 17 18]);
 
 
 strFig = 'aPowerEstSofwaInOut';
+matFile1a = strrep(matFile1,datDir,'');
 
-print(fullfile(figDir,[strFig, matFile1(1:7)]), '-dpng');
-print(fullfile(figDir,[strFig, matFile1(1:7)]), '-depsc');
+print(fullfile(figDir,[strFig, matFile1a(2:8)]), '-dpng');
+print(fullfile(figDir,[strFig, matFile1a(2:8)]), '-depsc');
 

@@ -19,6 +19,11 @@ analysis ='YAW_MPC_offset_test'; %name of directory to be created to automatical
 filename ='yaw_control/U_data_complete_vec_yaw_off.mat'; %directory for matlab file with flow field identification data set
 filenamevalid ='yaw_control/U_data_complete_vec_yaw_off_val.mat'; %directory for matlab file with flow field validation data set
 
+datOutputDir = 'datOutputDir'; % create output directory
+if exist(datOutputDir,'dir') ~= 7
+    mkdir(datOutputDir);
+end
+
 detrendingstates = 1; %1 to take mean flow and consider turbulent fluctuations
 method = 3; %0: DMD ; 1:DMDc; 2:IODMD; 3:EIODMD
 videos = 0; %generate videos
@@ -133,7 +138,11 @@ statesvalid1 = statesvalid1all(1:noStateUV,:);
 
 
 PolyLiftingFunction = 0;
-noStates = [2,4,6,12,24];
+noStates = [4,6,12,24];
+
+aMatFilename = sprintf('simAll%d_plotStruct_resampledOriginal_Kpsi%d.mat',retakePoint,noStates(end));
+aMatFullfilename = fullfile(datOutputDir,aMatFilename);
+
 
 for idx = 1: length(noStates)
     koopman = koopmanVec;
@@ -143,7 +152,7 @@ for idx = 1: length(noStates)
     %% states from wind flow field
     statesWind = [states1; states1.^2; states1.^3]; %[states_u; states_u.^2; statesvalid_u.^3];
     statesWindvalid = [statesvalid1; statesvalid1.^2; statesvalid1.^3];
-    strKoop = 'Lin, quad. + cubic';
+    strKoop = sprintf('Lin, q. + c., n_g = %d',noStates(idx));
 
     structPrev.Ur1_prev1 = Deterministic(1,1);
     structPrev.Ur2_prev1 = Deterministic(2,1);
@@ -235,18 +244,28 @@ for idx = 1: length(noStates)
     plotStruct{idx}.legStr2 =  sprintf('%s; %s; VAF P(T2):%2.2f%%', strRetake,strKoop,a);
 
 end
+save(aMatFullfilename,'plotStruct');
 
+%% calculate the RMSE
+simPwr1 = plotStruct{1}.Outputs_val(1,1:end-1) * scalingfactors(1) + meanvalues(1);
+simPwr2 = plotStruct{1}.Outputs_val(2,1:end-1) * scalingfactors(2) + meanvalues(2);
+simPwrRef = (simPwr1 + simPwr2)/10^6;
 
+RMSEvec = nan(length(plotStruct),1);
+for idx = 1:length(plotStruct)
+    simPwr1 = plotStruct{idx}.ysim_val(1:end-1,1) * scalingfactors(1) + meanvalues(1);
+    simPwr2 = plotStruct{idx}.ysim_val(1:end-1,2) * scalingfactors(2) + meanvalues(2);
+    simPwr = (simPwr1 + simPwr2)/10^6;
+    RMSEvec(idx) = sqrt(mean((simPwr -simPwrRef').^2));
+end
+NRMSE_pct = (RMSEvec/ mean(simPwrRef)) * 100;
+RMSEveckW = RMSEvec *1000;
 
+%%
+aTextFile = strrep(strrep(strrep(aMatFullfilename,'simAll','VAF_retake'),'_plotStruct', ''),'.mat','.txt');
+fid = fopen(aTextFile,'w');
 
-%% if size(Outputs,1)==2
-% fid = fopen(['VAF_',strrep(filenameId,'.mat',''),'.txt'],'w');
-% fprintf(fid,'No K.\t PT1(Id)\t PT1(Val)\t\t PT2(Id)\t PT2(Val)\n');
-% else
-fid = fopen(['aVAF_retake_',num2str(retakePoint),'.txt'],'w');
-%fprintf(fid,'No K.\t PT1(Id)\t PT1(Val)\t PT2(Id)\t PT2(Val)\t FT1(Id)\t FT1(Val)\t\t FT2(Id)\t FT2(Val)\n');
-
-fprintf(fid,'Data subset & Lifting functions & States \\zeta & Selected States \\tilde{\\zeta} & VAF(P_1) & VAF(P_2)\n');
+fprintf(fid,'Data subset & Lifting functions & Koop omega & States \\zeta & Selected States \\tilde{\\zeta} & VAF(P_1) & VAF(P_2) & NRMSE \n');
 
 for idx = 1 : length(plotStruct)
     % fprintf('%s\n',plotStruct{idx}.legStrAllId);
@@ -256,43 +275,16 @@ for idx = 1 : length(plotStruct)
     aStructCell = regexp(aStruct.legStrAll,';','split');
     matches = regexp(aStruct.legStrAllId, '(\d+\.\d+)(?=%)', 'match');
     vaf_values = str2double(matches);
-    fprintf(fid, '%s & %s &  %d & %d & %2.2f\\ & %2.2f\\%% \n', aStructCell{1}, aStructCell{2}, ...
-        aStruct.noState, aStruct.noStateVAF, aStruct.a1, aStruct.a);
+    fprintf(fid, '%s & %s & %d %d & %d & %2.2f\\ & %2.2f\\%% & %2.2f\\%% \n', aStructCell{1}, aStructCell{2}, noStates(idx),...
+        aStruct.noState, aStruct.noStateVAF, aStruct.a1, aStruct.a, NRMSE_pct(idx));
 
 end
 fclose(fid);
 
-save(sprintf('simAll%d_plotStruct_resampledOriginal_Kpsi%d.mat',retakePoint,aStruct.noState),'plotStruct');
-
-return;
-
-%% (6) MODEL PREDICTIVE CONTROL DESIGN
-
-modeltouse = b;
-freq=1/dt;
-lpf=ss(freq, 1,freq,0,2);
-sys_red_fil=series(lpf, sys_red{modeltouse});
-
-mpcmodel = sys_red_fil;
-Hp = 600;
-Hc = 600;
-Inputs = Inputs_val;
-Outputs = Outputs_val;
-%scalingfactors = scalingfactors; dirdmd = dirdmd;
-qq = 1000;
-rr = 0.01;
-tic; [u,predictedpower,Pref]=power_referencetracking(mpcmodel,Hp,Hc,Inputs,Outputs,scalingfactors,dirdmd,qq,rr); toc
+fprintf('Results in mat file: %s\n',aMatFullfilename)
+fprintf('Printed to txt file: %s\n',aTextFile)
 
 
 
-% t = 1:dt:length(plotStruct{idx}.Outputs_val)*dt;
-%
-% fs = 12;
-% figure; plot(t,sum(plotStruct{idx}.Outputs_val),t,sum(plotStruct{idx}.ysim_val')');
-% grid on;
-%
-%   xlabel('Time (s)','FontSize',fs)
-%   ylabel(' \delta Power (MW)','FontSize',fs)
-% legend('Real',plotStruct{idx}.legStr,'Location','northoutside')
 
 
