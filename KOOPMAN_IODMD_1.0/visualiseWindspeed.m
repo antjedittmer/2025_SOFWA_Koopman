@@ -1,9 +1,9 @@
 %% Initialization and Data Loading
-clc; close all;
+clc; %close all;
 clearvars -except QQ_u QQ_v QQ_w x y z;
 
 % Check if wind field data (QQ_u) is already in workspace, otherwise load it
-if exist('QQ_u','var') ~= 1
+if exist('QQ_u','var') ~= 1 || length(QQ_u) ~= 96600
     parentDir = fileparts(pwd);
     % Path to the flow field identification data set (Yaw Off case)
     filename = 'data/yaw_control/U_data_complete_vec_yaw_off.mat'; 
@@ -15,6 +15,12 @@ figDir = fullfile(pwd,'figDir');
 if exist(figDir,'dir') ~= 7
     mkdir(figDir);
 end
+
+% Define specific slices and simulated measurement points 
+Xsel = [1,10,51,70]; % X-indices: WT1, near wake, far wake, upstream of WT2
+Ysel = 4:24;         % Lateral selection for sparse data
+Zsel = 10;           % Index for Hub Height
+zH = Zsel;
 
 %% Grid Definition and Downsampling
 plot3D = 0;
@@ -41,20 +47,7 @@ Xsel1 = 1:(length(xx)-55);
 Ysel1 = 1:(length(yy)-1); 
 Zsel1 = 1:23;
 
-% Dimensions adjustment for specific datasets (Yaw correction logic)
-if length(QQ_u) == 51543
-    yy = yy(1:1:end-1);
-    xx = xx(1:1:end-55);
-    zz = zz(1:1:23);
-end
-
 Y = length(yy); X = length(xx); Z = length(zz);
-
-% Define specific slices and simulated measurement points (e.g., LiDAR scans)
-Xsel = [1,70,10,50]; % X-indices: WT1, near wake, far wake, upstream of WT2
-Ysel = 4:24;         % Lateral selection for sparse data
-Zsel = 10;           % Index for Hub Height
-zH = Zsel;
 
 % Create 3D meshgrid (shifted by 500m for centering)
 [Xm_shs,Ym_shs,Zm] = meshgrid(xx-500,(yy-500), zz);
@@ -84,7 +77,7 @@ U_usel = UmeanAbs_sh_u2D(Ysel,Xsel);
 U_vsel = UmeanAbs_sh_v2D(Ysel,Xsel);
 
 %% Plot 1: Plan View (X-Y Plane) at Hub Height
-figure(1);
+figure;
 fs = 15; % Font size
 set(gcf, 'Position', [100, 100, 1800, 450]); 
 t1 = tiledlayout(1, 1, 'TileSpacing', 'none', 'Padding', 'none'); 
@@ -123,8 +116,10 @@ figYZ = figure('Position', [100, 100, 1800, 450]);
 t = tiledlayout(1, 4, 'TileSpacing', 'compact', 'Padding', 'tight');
 
 % Titles for different downstream locations
-titles = {'WT1 Rotor (index 1)', '112.5 m behind WT1 (index 10)', ...
-          '612.5 m behind WT1 (index 50)', '27.5 m in front of WT2 Rotor (index 70)'};
+titles = {'WT1 Rotor (index 1)', ...
+          sprintf('%2.1f m behind WT1 (index %d)',12.5*(Xsel(2)- 1), Xsel(2)),...
+          sprintf('%2.1f m behind WT1 (index %d)',12.5*(Xsel(3)- 1), Xsel(3)), ...
+          sprintf('%2.1f m in front of WT2 Rotor (index %d)',890 - 12.5*(Xsel(4)- 1), Xsel(4))};
 p2 = 1;
 
 for idxT = 1:4

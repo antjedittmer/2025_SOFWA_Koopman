@@ -71,17 +71,10 @@ else
 end
 
 %% Retake points
+% Use not all grid points, but only a selection
 if retakePoint == 0
-    % QQ_u1 =QQ_u;
-    % QQ_v1 =QQ_v;
-    % QQ_w1 =QQ_w;
-    %
-    % valid.QQ_u1 = valid.QQ_u;
-    % valid.QQ_v1 = valid.QQ_v;
-    % valid.QQ_w1 = valid.QQ_w;
-
-    %for not using all grid points and only part of them (example,
-    %only between first and second turbine)
+   
+    % Points between first and second turbine
     strRetake = 'All wind meas.';
     [~,~,~,~,~,~,QQ_u1] = retakepoints(QQ_u,x,y,z,Decimate);
     [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_u1] = retakepoints(valid.QQ_u,x,y,z,Decimate);

@@ -1,6 +1,10 @@
-close all;
-if exist('QQ_u','var') ~= 1
+clc; close all;
+clearvars -except QQ_u QQ_v QQ_w x y z;
+
+% Check if wind field data (QQ_u) is already in workspace, otherwise load it
+if exist('QQ_u','var') ~= 1 || length(QQ_u) ~= 96600
     parentDir = fileparts(pwd);
+    % Path to the flow field identification data set (Yaw Off case)
     filename = 'data/yaw_control/U_data_complete_vec_yaw_off.mat'; 
     load(fullfile(parentDir,filename));
 end

@@ -1,7 +1,7 @@
 function VAF_P2 = getVAFforDifferentPositions(Xsel)
 
 if ~nargin
-    Xsel = [1,10,50,69];
+    Xsel = [1,10,50,70];
 end
 
 maindir = [pwd,'/matlab_code_tests/'];
@@ -10,12 +10,9 @@ maindir = [pwd,'/matlab_code_tests/'];
 
 pitchmode = 0; %0 for wake redirection control (yaw) and 1 for axial induction control (pitch)
 
-% dirName={[ DataIn,'/yaw_control/steps_yaw_20deg_10offset']}; %directory for identification data, wake redirection control
-% dirName_val={[ DataIn,'/yaw_control/steps_yaw_20deg_10offset_val']}; %directory for validation data, wake redirection control
 analysis ='YAW_MPC_offset_test'; %name of directory to be created to automatically store results
 filename ='yaw_control/U_data_complete_vec_yaw_off.mat'; %directory for matlab file with flow field identification data set
 filenamevalid ='yaw_control/U_data_complete_vec_yaw_off_val.mat'; %directory for matlab file with flow field validation data set
-
 
 %detrendingstates = 1; %1 to take mean flow and consider turbulent fluctuations
 method = 3; %0: DMD ; 1:DMDc; 2:IODMD; 3:EIODMD
@@ -26,7 +23,7 @@ r = 100;
 
 % Turbine and flow characteristics to be used
 rho = 1.225; %air density in [kg m^-3]
-D = 178; %Rotor Diameter used in simulations: 178 [m]
+%D = 178; %Rotor Diameter used in simulations: 178 [m]
 dt = 2; %time sampling
 maindir = strcat(maindir,analysis);  %define main directory
 
@@ -42,16 +39,7 @@ beg = (10001-itsf)/10; %instant to begin defined according to length of data
 % Read identification and validation data
 load('DataSetTurbineUsed.mat','rotSpeed*','nacelleYaw*','time1*','rotorAzimuth*','pitch*','powerGenerator*');
 
-
 %% Retake points
-
-if length(Xsel) == 2
-    strRetake = 'Turbine wind meas.';
-else
-    strRetake = 'Sparse wind meas.'; %'Turbine wind meas.';
-end
-
-
 [~,~,~,~,~,~,QQ_u1] = retakepoints_at_turbine(QQ_u,x,y,z,Decimate,Xsel);
 [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_u1] = retakepoints_at_turbine(valid.QQ_u,x,y,z,Decimate,Xsel);
 

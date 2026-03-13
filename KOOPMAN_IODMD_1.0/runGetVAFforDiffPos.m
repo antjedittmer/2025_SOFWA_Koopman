@@ -8,7 +8,7 @@ range1 = 1:2;          % [1, 2]
 range2 = 5:15;         % [5, 6, ..., 15]
 range3 = 40:60;        % [40, 41, ..., 60]
 range4 = 68:72;        % [68, 69, ..., 72]
-range5 = 3:73; 
+range5 = 3:73;
 
 % Use ndgrid to create a 4-dimensional grid of all possible points
 % Concatenate the flattened grids into a single matrix
@@ -27,7 +27,7 @@ else
 end
 matfilename = ['VAF_P2_M',num2str(nT),'.mat'];
 
-% Sort the rows to ensure they follow a strict numerical order 
+% Sort the rows to ensure they follow a strict numerical order
 % (First by col 1, then col 2, etc.)
 combinationsMatrix = sortrows(combinationsMatrix);
 
@@ -40,7 +40,7 @@ disp(combinationsMatrix(1:nDisp, :));
 
 % --- Load the mat file if it exists ---
 if exist(matfilename,'file') == 2
-   load(matfilename,'VAF_P2');
+    load(matfilename,'VAF_P2');
 else
     VAF_P2 = nan(1,length(combinationsMatrix));
     for idx = 1: length(combinationsMatrix)
@@ -50,18 +50,28 @@ else
     end
 end
 
-VAF_P2
 
 % --- Print out the maxium
 [maxVAF,idxVAF] = max(VAF_P2);
-fprintf('Max VAF %2.2f', maxVAF)
-combinationsMatrix(idxVAF,:)
+fprintf('Max VAF %2.2f over combinations %d with indices:\n', maxVAF,length(combinationsMatrix))
+fprintf('%d ',combinationsMatrix(idxVAF,:))
+fprintf('\n\n');
 
 idx1 = combinationsMatrix(:,1) == 1;
 
-[maxVAF,idxVAF] = max(VAF_P2(idx1));
-fprintf('Max VAF %2.2f', maxVAF)
-combinationsMatrix(idxVAF,:)
+[maxVAF1,idxVAF1] = max(VAF_P2(idx1));
+fprintf('Max VAF %2.2f Turbine 1 Pos 1(ombinations %d) with indices:\n',maxVAF1, sum(idx1))
+fprintf('%d ',combinationsMatrix(idxVAF1,:))
+fprintf('\n\n');
+
+if nT == 4
+    idx4 = combinationsMatrix(:,4) == 70;
+
+    [maxVAF,idxVAF] = max(VAF_P2(idx1 & idx4));
+    fprintf('Max VAF %2.2f Turbine 1 Pos 1 & Turbine 2 Pos 70 (combinations %d) with indices:\n',maxVAF1, sum(idx1&idx4))
+    combinationsMatrix(idxVAF,:);
+
+end
 
 
 
