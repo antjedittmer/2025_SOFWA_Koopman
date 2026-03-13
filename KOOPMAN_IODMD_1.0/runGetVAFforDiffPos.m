@@ -1,7 +1,7 @@
 clc; clear; close all;
 
 % Define the four value ranges based on your input
-nT = 2; % number of positions
+nT = 4; % number of positions
 loadMat = 1; % load the mat-file if available
 
 range1 = 1:2;          % [1, 2]
@@ -64,11 +64,12 @@ fprintf('Max VAF %2.2f Turbine 1 Pos 1(ombinations %d) with indices:\n',maxVAF1,
 fprintf('%d ',combinationsMatrix(idxVAF1,:))
 fprintf('\n\n');
 
-idx4 = combinationsMatrix(:,nT) == 70;
+nEnd = 70;
+idx4 = combinationsMatrix(:,nT) == nEnd;
 
 VAFP2_1_70 = VAF_P2(idx1 & idx4);
 [maxVAF2,idxVAF2] = max(VAFP2_1_70);
-fprintf('Max VAF %2.2f Turbine 1 Pos 1 & Turbine 2 Pos 70 (combinations %d) with indices:\n',maxVAF2, sum(idx1&idx4))
+fprintf('Max VAF %2.2f Turbine 1 Pos 1 & Turbine 2 Pos %d (combinations %d) with indices:\n',maxVAF2, nEnd, sum(idx1&idx4))
 combinationsMatrix_1_70 = combinationsMatrix(idx1 & idx4,:);
 fprintf('%d ',combinationsMatrix_1_70(idxVAF2,:))
 fprintf('\n\n');
