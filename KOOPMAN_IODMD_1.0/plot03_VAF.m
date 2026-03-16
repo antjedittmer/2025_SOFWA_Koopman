@@ -1,27 +1,25 @@
 clc; clear; close all;
 
-addpath('2.DYNAMIC_MODE_DECOMPOSITION');
+%% Set path to mat file for plotting
+setTurbine = 0; % Switch: 0: Wind field and sparse data, 1: Turbine data
 
+datDir = 'datOutputDir';
+if setTurbine == 1
+    matFile0 = fullfile(datDir,'simAll1_plotStruct_long70.mat'); % Turbine data
+    matFile1 = fullfile(datDir,'simAll1_plotStruct_resampledOriginal_Kpsi24.mat'); %' Turbine data with lifted rotor speeds
+else
+    matFile0 = fullfile(datDir,'simAll0_plotStruct.mat'); % Wind field 
+    matFile1 = fullfile(datDir,'simAll2_plotStruct_long70.mat'); % Sparse data
+end
+
+%% Create figure directory
+addpath('2.DYNAMIC_MODE_DECOMPOSITION');
 figDir = fullfile(pwd,'figDir');
 if exist(figDir,'dir') ~= 7
     mkdir(figDir);
 end
 
-load('DataSetScaling.mat', 'scalingfactors','meanvalues');
-
-setTurbine = 0;
-
-datDir = 'datOutputDir';
-
-if setTurbine == 1
-    matFile0 = fullfile(datDir,'simAll1_plotStruct_long70.mat'); %'simAll1_plotStruct_resampledOriginal.mat';
-    matFile1 = fullfile(datDir,'simAll1_plotStruct_resampledOriginal_Kpsi24.mat'); %';
-else
-    matFile0 = fullfile(datDir,'simAll0_plotStruct.mat'); %'simAll0_plotStruct_resampledOriginal.mat'; %'simAll0_plotStruct.mat'
-    matFile1 = fullfile(datDir,'simAll2_plotStruct_long70.mat'); %'simAll2_plotStruct_resampledOriginal.mat'; %'simAll1_plotStruct_resampledOriginal.mat'; %,
-end
-
-load(matFile0,'plotStruct');
+load(matFile0,'plotStruct','scalingfactors','meanvalues');
 plotStruct1 = plotStruct;
 
 %% Calculate true power
@@ -43,11 +41,14 @@ fs = 12; % font size for all plots
 
 %% --- Subplot 1: Non-scaled yaw input (converted to degrees) ---
 nexttile;
-load('DataSetTurbineUsed.mat','rotSpeed*','nacelleYaw*','time1*','rotorAzimuth*','pitch*','powerGenerator*');
+turbineData = fullfile('datInOutDir','DataSetTurbineUsed.mat');
+load(turbineData,'rotSpeed*','nacelleYaw*','time1*','rotorAzimuth*','pitch*','powerGenerator*');
 itsf=921;
 beg=(10001-itsf)/10;
 rho = 1.225;
-[Inputs_val, Outputs_val, Deterministic_val] = preprocessdmdval(beg, rotSpeed_val,time1_val,rotorAzimuth_val,nacelleYaw_val,pitchmode,pitch_val,scalingfactors,powerGenerator_val,rho,meanvalues);
+pitchmode = 0;
+[Inputs_val, Outputs_val, Deterministic_val] = ...
+    preprocessdmdval(beg, rotSpeed_val,time1_val,rotorAzimuth_val,nacelleYaw_val,pitchmode,pitch_val,scalingfactors,powerGenerator_val,rho,meanvalues);
 
 yaw_deg = Inputs_val * scalingfactors(3); % yaw in degrees
 plot(t, yaw_deg, 'LineWidth', 1.5)

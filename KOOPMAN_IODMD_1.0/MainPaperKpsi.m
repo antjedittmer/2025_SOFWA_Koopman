@@ -1,9 +1,8 @@
-
 %% Data handling
 clc; close all; clear;
 
 restoredefaultpath;
-addpath('./1.ASSESS_DATA','./2.DYNAMIC_MODE_DECOMPOSITION','./3.VALIDATION','./4.DYNAMICAL_ANALYSIS','./5.REBUILD','./6.MODEL_PC','OTHER');
+addpath('./1.ASSESS_DATA','./2.DYNAMIC_MODE_DECOMPOSITION','./3.VALIDATION'); %'./4.DYNAMICAL_ANALYSIS','./5.REBUILD','./6.MODEL_PC','OTHER');
 addpath(genpath(fullfile(fileparts(pwd),'data')))
 p = genpath('Functions'); addpath(p)
 
@@ -13,12 +12,16 @@ parentdir = fileparts(fileparts(codedir));
 DataIn = fullfile(parentdir,'data');
 
 pitchmode = 0; %0 for wake redirection control (yaw) and 1 for axial induction control (pitch)
-
 dirName={[ DataIn,'/yaw_control/steps_yaw_20deg_10offset']}; %directory for identification data, wake redirection control
 dirName_val={[ DataIn,'/yaw_control/steps_yaw_20deg_10offset_val']}; %directory for validation data, wake redirection control
 analysis ='YAW_MPC_offset_test'; %name of directory to be created to automatically store results
 filename ='yaw_control/U_data_complete_vec_yaw_off.mat'; %directory for matlab file with flow field identification data set
 filenamevalid ='yaw_control/U_data_complete_vec_yaw_off_val.mat'; %directory for matlab file with flow field validation data set
+
+datOutputDir = 'datOutputDir'; % create output directory
+if exist(datOutputDir,'dir') ~= 7
+    mkdir(datOutputDir);
+end
 
 detrendingstates = 1; %1 to take mean flow and consider turbulent fluctuations
 method = 3; %0: DMD ; 1:DMDc; 2:IODMD; 3:EIODMD
@@ -54,19 +57,10 @@ end
 
 %% Retake points
 
-%% Retake points
 if retakePoint == 0
-    % QQ_u1 =QQ_u;
-    % QQ_v1 =QQ_v;
-    % QQ_w1 =QQ_w;
-    %
-    % valid.QQ_u1 = valid.QQ_u;
-    % valid.QQ_v1 = valid.QQ_v;
-    % valid.QQ_w1 = valid.QQ_w;
 
     %for not using all grid points and only part of them (example,
     %only between first and second turbine)
-    strRetake = 'All wind meas.';
     [~,~,~,~,~,~,QQ_u1] = retakepoints(QQ_u,x,y,z,Decimate);
     [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_u1] = retakepoints(valid.QQ_u,x,y,z,Decimate);
 
@@ -78,32 +72,16 @@ if retakePoint == 0
 
 elseif retakePoint == 1
 
-    % wind at turbine hubheight
-    Xsel = [1,70];
-    strRetake = 'Turbine wind meas.'; %'Sparse wind meas.'; %'Turbine wind meas.';
-    [~,~,~,~,~,~,QQ_u1] = retakepoints_at_turbine(QQ_u,x,y,z,Decimate,Xsel);
-    [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_u1] = retakepoints_at_turbine(valid.QQ_u,x,y,z,Decimate,Xsel);
+    %for not using all grid points and only part of them (example,
+    %only between first and second turbine)
+    [~,~,~,~,~,~,QQ_u1] = retakepoints_at_turbine(QQ_u,x,y,z,Decimate);
+    [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_u1] = retakepoints_at_turbine(valid.QQ_u,x,y,z,Decimate);
 
-    [~,~,~,~,~,~,QQ_v1] = retakepoints_at_turbine(QQ_v,x,y,z,Decimate,Xsel);
-    [~,~,~,~,~,~,QQ_w1] = retakepoints_at_turbine(QQ_w,x,y,z,Decimate,Xsel);
+    [~,~,~,~,~,~,QQ_v1] = retakepoints_at_turbine(QQ_v,x,y,z,Decimate);
+    [~,~,~,~,~,~,QQ_w1] = retakepoints_at_turbine(QQ_w,x,y,z,Decimate);
 
     [~,~,~,~,~,~,valid.QQ_v1] = retakepoints_at_turbine(valid.QQ_v,x,y,z,Decimate);
     [~,~,~,~,~,~,valid.QQ_w1] = retakepoints_at_turbine(valid.QQ_w,x,y,z,Decimate);
-
-elseif retakePoint == 2
-
-    % wind at turbine hub height and in between turbines
-    Xsel = [1,10,51,70];
-    strRetake = 'Sparse wind meas.'; %'Turbine wind meas.';
-    [~,~,~,~,~,~,QQ_u1] = retakepoints_at_turbine(QQ_u,x,y,z,Decimate,Xsel);
-    [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_u1] = retakepoints_at_turbine(valid.QQ_u,x,y,z,Decimate,Xsel);
-
-    [~,~,~,~,~,~,QQ_v1] = retakepoints_at_turbine(QQ_v,x,y,z,Decimate,Xsel);
-    [~,~,~,~,~,~,QQ_w1] = retakepoints_at_turbine(QQ_w,x,y,z,Decimate,Xsel);
-
-    [~,~,~,~,~,~,valid.QQ_v1] = retakepoints_at_turbine(valid.QQ_v,x,y,z,Decimate,Xsel);
-    [~,~,~,~,~,~,valid.QQ_w1] = retakepoints_at_turbine(valid.QQ_w,x,y,z,Decimate,Xsel);
-
 else
     %for not using all grid points and only part of them (example,
     %only between first and second turbine)
@@ -116,11 +94,6 @@ else
     [~,~,~,~,~,~,valid.QQ_v1] = retakepoints_at_turbinedisk(valid.QQ_v,x,y,z,Decimate);
     [~,~,~,~,~,~,valid.QQ_w1] = retakepoints_at_turbinedisk(valid.QQ_w,x,y,z,Decimate);
 end
-%
-% %easy solution to augment u flow field data matricx with other flow
-% %field data instead of using koopmanextension function
-% QQ_u1 = [double(QQ_u1);double(QQ_v1)]; %double(QQ_w1)
-% valid.QQ_u1 = [double(valid.QQ_u1);double(valid.QQ_v1)]; %double(valid.QQ_w1) %perform same
 
 %% Concatenate and detrend flow fields/states if desired
 
@@ -142,48 +115,43 @@ else
     statesvalid1all = statesvalid0;
 end
 
-%% (2) DYNAMIC MODE DECOMPOSITION
-
 % Process validation data
 [Inputs, Outputs, Deterministic,scalingfactors,meanvalues] = preprocessdmdid(beg, rotSpeed,time1,rotorAzimuth,nacelleYaw, pitchmode,pitch,powerGenerator,rho); %preprocess information (resample, and maintain only relevant data)
 [Inputs_val, Outputs_val, Deterministic_val] = preprocessdmdval(beg, rotSpeed_val,time1_val,rotorAzimuth_val,nacelleYaw_val,pitchmode,pitch_val,scalingfactors,powerGenerator_val,rho,meanvalues); %preprocess information (resample and only relevant data)
 
+%% (2) DYNAMIC MODE DECOMPOSITION
+
+if retakePoint == 0
+    strRetake = 'All wind meas.';
+else
+    strRetake = 'Turbine wind meas.';
+end
 
 %% Start loop over
 % states1 = Deterministic;
 % statesvalid1 = Deterministic_val;
-noStateUV = 1/3 *size(states1all,1); %u and v selected
-strKoop = 'Lin.';
-noStateUV = 1/3 *size(states1all,1); %u and v selected
-    noStateUV = 1/3 * size(states1all,1); %u and v selected
-    states1 = states1all(1:noStateUV,:);
-    statesvalid1 = statesvalid1all(1:noStateUV,:);
+
+noStateUV = 1/3 * size(states1all,1); %u and v selected
+states1 = states1all(1:noStateUV,:);
+statesvalid1 = statesvalid1all(1:noStateUV,:);
+
 
 PolyLiftingFunction = 0;
 noStates = [4,6,12,24];
-koopman0 = 0;
+
+aMatFilename = sprintf('simAll%d_plotStruct_resampledOriginal_Kpsi%d.mat',retakePoint,noStates(end));
+aMatFullfilename = fullfile(datOutputDir,aMatFilename);
+
+
 for idx = 1: length(noStates)
     koopman = koopmanVec;
     noState = noStates(idx);
+    r = 100;
 
     %% states from wind flow field
-    if koopman0 == 1 % linear + quadratic + cubic
-        statesWind = [states1; states1.^2];
-        statesWindvalid = [statesvalid1; statesvalid1.^2];
-        strKoop = 'Lin. + quad.';
-
-    elseif koopman0 == 2 % linear + cubic
-
-        statesWind = [states1; states1.^2; states1.^3]; %[states_u; states_u.^2; statesvalid_u.^3];
-        statesWindvalid = [statesvalid1; statesvalid1.^2; statesvalid1.^3];
-        strKoop = sprintf('Lin, quad. + cubic, n_{koop} = %d',noState);
-
-    else
-        statesWind = [states1];
-        statesWindvalid = [statesvalid1];
-        strKoop = 'Lin.';
-
-    end
+    statesWind = [states1; states1.^2; states1.^3]; %[states_u; states_u.^2; statesvalid_u.^3];
+    statesWindvalid = [statesvalid1; statesvalid1.^2; statesvalid1.^3];
+    strKoop = sprintf('Lin, q. + c., n_g = %d',noStates(idx));
 
     structPrev.Ur1_prev1 = Deterministic(1,1);
     structPrev.Ur2_prev1 = Deterministic(2,1);
@@ -201,7 +169,8 @@ for idx = 1: length(noStates)
     % windAtTurbine = [QQ_u1; QQ_v1];
     % statesUV = koopmanstateextensionWFSim(windAtTurbine,poly,n);
     % stateNameUV = regexprep(stateNameUr,{'Ur1','Ur2','M'},{'u','v','Muv'});
-    states = [statesWind;statesUr(3:noState,:)]; %[statesUr]; %;statesUV];
+    states = statesWind; %[statesUr]; %;statesUV];
+    Deterministic = statesUr;
     stateName = [stateNameUr]; %,';',stateNameUV];
 
     structPrev.Ur1_prev1 = Deterministic_val(1,1);
@@ -217,8 +186,8 @@ for idx = 1: length(noStates)
     end
     % windAtTurbineVal = [valid.QQ_u1; valid.QQ_v1];
     % statesUV_val = koopmanstateextensionWFSim(windAtTurbineVal,poly,n);
-    statesvalid = [statesWindvalid; statesvalidUr(3:noState,:)]; %;statesUV_val];
-
+    statesvalid = statesWindvalid;  %;statesUV_val];
+    Deterministic_val =statesvalidUr;
 
 
     n = size(states,1);
@@ -242,7 +211,7 @@ for idx = 1: length(noStates)
     [FITje_val,dirdmd_val,xstatesvalid] = validatemodels(sys_red,Inputs_val,Outputs_val,r,strcat(dirdmd, '/val'),f,statesvalid,U,Deterministic_val,method,plotView,plotOn);
     save(strcat(dirdmd,'/FIT.mat'),'FITje_val','FITje');
 
-    [modelVAF_val]=idvaloverview(FITje,FITje_val,dirdmd,'VAFidandval');  %overview of models results (identification and validation)
+    % [modelVAF_val]=idvaloverview(FITje,FITje_val,dirdmd,'VAFidandval');  %overview of models results (identification and validation)
     [a,b] = max(FITje_val(2,1:r)); %best performing model, only analysing first 50
     [a1,b1] = max(FITje_val(1,1:r));
     [aId,b1] = max(FITje(2,1:r)); %best performing model, only analysing first 50
@@ -274,16 +243,28 @@ for idx = 1: length(noStates)
     plotStruct{idx}.legStr2 =  sprintf('%s; %s; VAF P(T2):%2.2f%%', strRetake,strKoop,a);
 
 end
+save(aMatFullfilename,'plotStruct','plotStruct','scalingfactors','meanvalues');
 
+%% calculate the RMSE
+simPwr1 = plotStruct{1}.Outputs_val(1,1:end-1) * scalingfactors(1) + meanvalues(1);
+simPwr2 = plotStruct{1}.Outputs_val(2,1:end-1) * scalingfactors(2) + meanvalues(2);
+simPwrRef = (simPwr1 + simPwr2)/10^6;
 
-%% if size(Outputs,1)==2
-% fid = fopen(['VAF_',strrep(filenameId,'.mat',''),'.txt'],'w');
-% fprintf(fid,'No K.\t PT1(Id)\t PT1(Val)\t\t PT2(Id)\t PT2(Val)\n');
-% else
-fid = fopen(['aVAF_retake_',num2str(retakePoint),'_Koop.txt'],'w');
-%fprintf(fid,'No K.\t PT1(Id)\t PT1(Val)\t PT2(Id)\t PT2(Val)\t FT1(Id)\t FT1(Val)\t\t FT2(Id)\t FT2(Val)\n');
+RMSEvec = nan(length(plotStruct),1);
+for idx = 1:length(plotStruct)
+    simPwr1 = plotStruct{idx}.ysim_val(1:end-1,1) * scalingfactors(1) + meanvalues(1);
+    simPwr2 = plotStruct{idx}.ysim_val(1:end-1,2) * scalingfactors(2) + meanvalues(2);
+    simPwr = (simPwr1 + simPwr2)/10^6;
+    RMSEvec(idx) = sqrt(mean((simPwr -simPwrRef').^2));
+end
+NRMSE_pct = (RMSEvec/ mean(simPwrRef)) * 100;
+RMSEveckW = RMSEvec *1000;
 
-fprintf(fid,'Data subset & Lifting functions & States \\zeta & Selected States \\tilde{\\zeta} & VAF(P_1) & VAF(P_2)\n');
+%%
+aTextFile = strrep(strrep(strrep(aMatFullfilename,'simAll','VAF_retake'),'_plotStruct', ''),'.mat','.txt');
+fid = fopen(aTextFile,'w');
+
+fprintf(fid,'Data subset & Lifting functions & Koop omega & States \\zeta & Selected States \\tilde{\\zeta} & VAF(P_1) & VAF(P_2) & NRMSE \n');
 
 for idx = 1 : length(plotStruct)
     % fprintf('%s\n',plotStruct{idx}.legStrAllId);
@@ -293,43 +274,16 @@ for idx = 1 : length(plotStruct)
     aStructCell = regexp(aStruct.legStrAll,';','split');
     matches = regexp(aStruct.legStrAllId, '(\d+\.\d+)(?=%)', 'match');
     vaf_values = str2double(matches);
-    fprintf(fid, '%s & %s &  %d & %d & %2.2f\\ & %2.2f\\%% \n', aStructCell{1}, aStructCell{2}, ...
-        aStruct.noState, aStruct.noStateVAF, aStruct.a1, aStruct.a);
+    fprintf(fid, '%s & %s & %d %d & %d & %2.2f\\ & %2.2f\\%% & %2.2f\\%% \n', aStructCell{1}, aStructCell{2}, noStates(idx),...
+        aStruct.noState, aStruct.noStateVAF, aStruct.a1, aStruct.a, NRMSE_pct(idx));
 
 end
 fclose(fid);
 
-save(sprintf('simAll%d_plotStruct_resampledOriginal_Kpsi%d.mat',retakePoint,aStruct.noState),'plotStruct');
-
-return;
-
-%% (6) MODEL PREDICTIVE CONTROL DESIGN
-
-modeltouse = b;
-freq=1/dt;
-lpf=ss(freq, 1,freq,0,2);
-sys_red_fil=series(lpf, sys_red{modeltouse});
-
-mpcmodel = sys_red_fil;
-Hp = 600;
-Hc = 600;
-Inputs = Inputs_val;
-Outputs = Outputs_val;
-%scalingfactors = scalingfactors; dirdmd = dirdmd;
-qq = 1000;
-rr = 0.01;
-tic; [u,predictedpower,Pref]=power_referencetracking(mpcmodel,Hp,Hc,Inputs,Outputs,scalingfactors,dirdmd,qq,rr); toc
+fprintf('Results in mat file: %s\n',aMatFullfilename)
+fprintf('Printed to txt file: %s\n',aTextFile)
 
 
 
-% t = 1:dt:length(plotStruct{idx}.Outputs_val)*dt;
-%
-% fs = 12;
-% figure; plot(t,sum(plotStruct{idx}.Outputs_val),t,sum(plotStruct{idx}.ysim_val')');
-% grid on;
-%
-%   xlabel('Time (s)','FontSize',fs)
-%   ylabel(' \delta Power (MW)','FontSize',fs)
-% legend('Real',plotStruct{idx}.legStr,'Location','northoutside')
 
 

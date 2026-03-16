@@ -1,5 +1,12 @@
 clc; clear; close all;
 
+aPwd = pwd;
+
+DataInOut = fullfile(aPwd,'datInOutDir'); % directory for results that are generated once
+if exist(DataInOut,'dir') ~= 7
+    mkdir(DataInOut);
+end
+
 % Define the four value ranges based on your input
 nT = 4; % number of positions
 loadMat = 1; % load the mat-file if available
@@ -25,7 +32,7 @@ else
     combinationsMatrix = [A(:), B(:)];
     nT = 2;
 end
-matfilename = ['VAF_P2_M',num2str(nT),'.mat'];
+matfilename = fullfile(DataInOut, ['VAF_P2_M',num2str(nT),'.mat']);
 
 % Sort the rows to ensure they follow a strict numerical order
 % (First by col 1, then col 2, etc.)
@@ -63,7 +70,7 @@ fprintf('Max VAF %2.2f Turbine 1 Pos 1(ombinations %d) with indices:\n',maxVAF1,
 fprintf('%d ',combinationsMatrix(idxVAF1,:))
 fprintf('\n\n');
 
-nEnd = 70;
+nEnd = 72;
 idx4 = combinationsMatrix(:,nT) == nEnd;
 
 VAFP2_1_70 = VAF_P2(idx1 & idx4);

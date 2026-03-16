@@ -1,11 +1,14 @@
-%% Data handling
+%% Main file to reproduce the part of the results in Table 
+
+
+%% Set parameters, path to files 
 clc; close all; 
 clearvars -except QQ_u QQ_v QQ_w x y z valid Decimate; 
 
 % User parameters to be changed
-loadMat = 0; % Switch to load matfile if available
-koopmanVec = 0:3; % 
-retakePoint = 1;
+loadMat = 1; % Switch to load matfile if available
+koopmanVec = 0:3; % Loop over different lifted functions
+retakePoint = 2;
 
 restoredefaultpath;
 addpath('./1.ASSESS_DATA','./2.DYNAMIC_MODE_DECOMPOSITION','./3.VALIDATION'); % ,'OTHER'
@@ -19,11 +22,11 @@ maindir = [aPwd,'/matlab_code_tests/']; %directory to save results
 codedir = mfilename('fullpath');
 parentdir = fileparts(fileparts(codedir));
 DataIn = fullfile(parentdir,'data');
+
 DataInOut = fullfile(aPwd,'datInOutDir'); % directory for results that are generated once
 if exist(DataInOut,'dir') ~= 7
     mkdir(DataInOut);
 end
-
 
 datOutputDir = fullfile(aPwd,'datOutputDir'); % create output directory
 if exist(datOutputDir,'dir') ~= 7
@@ -71,9 +74,9 @@ if retakePoint > 0
 end
 aMatFullfilename = fullfile(datOutputDir,aMatFilename);
 
-%% Load the data
+%% Load data: Results from previous runs or wind and turbine data
 
-if exist(aMatFullfilename,'file') == 2 && loadMat == 1
+if exist(aMatFullfilename,'file') == 2 && loadMat == 1 && isequal(koopmanVec,0:3)
     load(aMatFullfilename,'plotStruct','scalingfactors','meanvalues');
 else
 
