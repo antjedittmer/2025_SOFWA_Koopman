@@ -2,48 +2,44 @@
 clc; close all; 
 clearvars -except QQ_u QQ_v QQ_w x y z valid Decimate; 
 
+% User parameters to be changed
 loadMat = 0; % Switch to load matfile if available
+koopmanVec = 0:3; % 
+retakePoint = 1;
 
 restoredefaultpath;
-addpath('./1.ASSESS_DATA','./2.DYNAMIC_MODE_DECOMPOSITION','./3.VALIDATION','OTHER');
+addpath('./1.ASSESS_DATA','./2.DYNAMIC_MODE_DECOMPOSITION','./3.VALIDATION'); % ,'OTHER'
 % './4.DYNAMICAL_ANALYSIS','./5.REBUILD','./6.MODEL_PC',
-addpath(genpath(fullfile(fileparts(pwd),'data')))
+
+aPwd = pwd;
+addpath(genpath(fullfile(fileparts(aPwd),'data')))
 p = genpath('Functions'); addpath(p)
 
-maindir = [pwd,'/matlab_code_tests/']; %directory to save results
+maindir = [aPwd,'/matlab_code_tests/']; %directory to save results
 codedir = mfilename('fullpath');
 parentdir = fileparts(fileparts(codedir));
 DataIn = fullfile(parentdir,'data');
+DataInOut = fullfile(aPwd,'datInOutDir'); % directory for results that are generated once
+if exist(DataInOut,'dir') ~= 7
+    mkdir(DataInOut);
+end
 
 
-datOutputDir = 'datOutputDir'; % create output directory
+datOutputDir = fullfile(aPwd,'datOutputDir'); % create output directory
 if exist(datOutputDir,'dir') ~= 7
     mkdir(datOutputDir);
 end
 
-pitchmode = 0; %0 for wake redirection control (yaw) and 1 for axial induction control (pitch)
-
-if pitchmode == 0
-    dirName={[ DataIn,'/yaw_control/steps_yaw_20deg_10offset']}; %directory for identification data, wake redirection control
-    dirName_val={[ DataIn,'/yaw_control/steps_yaw_20deg_10offset_val']}; %directory for validation data, wake redirection control
-    analysis ='YAW_MPC_offset_test'; %name of directory to be created to automatically store results
-    filename ='yaw_control/U_data_complete_vec_yaw_off.mat'; %directory for matlab file with flow field identification data set
-    filenamevalid ='yaw_control/U_data_complete_vec_yaw_off_val.mat'; %directory for matlab file with flow field validation data set
-
-elseif pitchmode == 1
-    dirName={[DataIn,'/pitch_control/steps_theta_col_new']}; %directory for identification data, collective pitch control
-    dirName_val={[DataIn,'/pitch_control/steps_theta_col_new_val']}; %directory for validation data, collective pitch control
-    analysis ='PULSE_MPC/'; % name of directory to be created to automatically store results
-    filename ='pitch_control/U_data_complete_vec_pulse.mat'; %directory for matlab file with flow field identification data set
-    filenamevalid ='pitch_control/U_data_complete_vec_pulse_val.mat'; %directory for matlab file with flow field validation data set
-
-end
+pitchmode = 0;
+dirName={[ DataIn,'/yaw_control/steps_yaw_20deg_10offset']}; %directory for identification data, wake redirection control
+dirName_val={[ DataIn,'/yaw_control/steps_yaw_20deg_10offset_val']}; %directory for validation data, wake redirection control
+analysis ='YAW_MPC_offset_test'; %name of directory to be created to automatically store results
+filename ='yaw_control/U_data_complete_vec_yaw_off.mat'; %directory for matlab file with flow field identification data set
+filenamevalid ='yaw_control/U_data_complete_vec_yaw_off_val.mat'; %directory for matlab file with flow field validation data set
 
 % Parameters
 detrendingstates = 1; %1 to take mean flow and consider turbulent fluctuations
 method = 3; %0: DMD ; 1:DMDc; 2:IODMD; 3:EIODMD
-koopmanVec = 0:3;
-retakePoint = 1;
 
 % Turbine and flow characteristics to be used
 rho = 1.225; %air density in [kg m^-3]
@@ -78,7 +74,7 @@ aMatFullfilename = fullfile(datOutputDir,aMatFilename);
 %% Load the data
 
 if exist(aMatFullfilename,'file') == 2 && loadMat == 1
-    load(aMatFullfilename,'plotStruct');
+    load(aMatFullfilename,'plotStruct','scalingfactors','meanvalues');
 else
 
     % Load wind data (needs 5.507 s, only once)
@@ -88,12 +84,13 @@ else
     end
 
     % Read or load identification and validation turbine data (needs 0.008 s)
-    if exist('DataSetTurbineUsed.mat','file') == 2
-        load('DataSetTurbineUsed.mat','rotSpeed*','nacelleYaw*','time1*','rotorAzimuth*','pitch*','powerGenerator*');
+    if exist(fullfile(DataInOut,'DataSetTurbineUsed.mat'),'file') == 2
+        load(fullfile(DataInOut,'DataSetTurbineUsed.mat'),'rotSpeed*','nacelleYaw*','time1*','rotorAzimuth*','pitch*','powerGenerator*');
     else
         [rotSpeed, nacelleYaw, time1,rotorAzimuth,pitch,powerGenerator] = readdmdinformation(dirName); %read information from simulation
         [rotSpeed_val, nacelleYaw_val,time1_val,rotorAzimuth_val,pitch_val,powerGenerator_val] = readdmdinformation(dirName_val); %read information from simulation
-        save('DataSetTurbineUsed.mat','rotSpeed*','nacelleYaw*','time1*','rotorAzimuth*','pitch*','powerGenerator*');
+        save(fullfile(DataInOut,'DataSetTurbineUsed.mat'),'rotSpeed*','nacelleYaw*','time1*','rotorAzimuth*','pitch*','powerGenerator*');
+        cd(aPwd); % to change back to this directory
     end
 
     %% Retake points
@@ -254,7 +251,7 @@ else
     end
     % Save to matfile:
     if length(koopmanVec) >= 4
-        save(aMatFullfilename,'plotStruct');
+        save(aMatFullfilename,'plotStruct','scalingfactors','meanvalues');
     end
 end
 

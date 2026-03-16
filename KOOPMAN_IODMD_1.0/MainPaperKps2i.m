@@ -2,7 +2,7 @@
 clc; close all; clear;
 
 restoredefaultpath;
-addpath('./1.ASSESS_DATA','./2.DYNAMIC_MODE_DECOMPOSITION','./3.VALIDATION','./4.DYNAMICAL_ANALYSIS','./5.REBUILD','./6.MODEL_PC','OTHER');
+addpath('./1.ASSESS_DATA','./2.DYNAMIC_MODE_DECOMPOSITION','./3.VALIDATION'); %'./4.DYNAMICAL_ANALYSIS','./5.REBUILD','./6.MODEL_PC','OTHER');
 addpath(genpath(fullfile(fileparts(pwd),'data')))
 p = genpath('Functions'); addpath(p)
 
