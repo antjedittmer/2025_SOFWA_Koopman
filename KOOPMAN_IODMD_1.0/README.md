@@ -11,7 +11,13 @@ The *runGetVAFforDiffPos.m* script does a grid search for finding the
 longitudinal position with the best variance-accounted for using the
 function *getVAFforDifferentPositions.m*.
 
+The script *plot01_Windspeed.m* plots the wind speeds in the wind fields.
+For this script, the wind fields in the Google drive from Cassamo need to 
+be downloaded.
 
+The script *plot03_VAF.m* plots the time series of the yaw input, the true 
+and predicted turbine and wind farm power for different measurement and 
+lifting function combinations.
 
 The main functionalities of the *MainPaper.m* and *MainPaperKpsi.m* are:
 

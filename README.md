@@ -14,10 +14,11 @@ The paper and the code is based on the work by **Nassir Cassamo** on Koopman-bas
 * **Cassamo's Repository:** [Cassamo/Koopman_MPC_WindFarm](https://github.com/nassircassamo/IODMD_SOWFA)
 * **Related Publications:** [Cassamo et al. (2020)](https://doi.org/10.3390/en13246513) and [Cassamo et al. (2021)](https://ieeexplore.ieee.org/document/9482631)
 
-The code needs the SOFWA data provided in [Cassamo/Koopman_MPC_WindFarm](https://github.com/nassircassamo/IODMD_SOWFA) to run.
+The code needs the SOFWA data provided in [Cassamo's Google Drive] (https://drive.google.com/drive/folders/1_X4Aibg2-OM4qSwOxZ1yCTXlL-vTQPrn?usp=sharing)
+to run. See [Cassamo/Koopman_MPC_WindFarm](https://github.com/nassircassamo/IODMD_SOWFA) for further details.
 
 ## Overview
-This study evaluates Koopman-based power prediction for wind farms using SOWFA (Simulator for Wind Farm Applications) data under varied sensing constraints. It investigates how sparse measurement configurations impact prediction fidelity and how physically motivated Koopman lifting functions (such as quadratic and cubic rotor speeds) can recover accuracy when spatial wind data is scarce.
+This study evaluates Koopman-based power prediction for wind farms using SOWFA (Simulator for Wind Farm Applications) data under varied sensor position constraints. It investigates how sparse measurement configurations impact prediction fidelity and how physically motivated Koopman lifting functions (such as quadratic and cubic rotor speeds) can recover accuracy when spatial wind data is scarce.
 
 The provided code compares:
 1. **Wind Field Models:** Based on high-resolution 51,543-point grids.

@@ -7,6 +7,10 @@ if exist('QQ_u','var') ~= 1 || length(QQ_u) ~= 96600
     parentDir = fileparts(pwd);
     % Path to the flow field identification data set (Yaw Off case)
     filename = 'data/yaw_control/U_data_complete_vec_yaw_off.mat'; 
+    fullfilename = fullfile(parentDir,filename);
+    if exist(fullfilename,'file') ~= 2
+        error('The wind field data is not available. Follow the download instruction from https://github.com/nassircassamo/IODMD_SOWFA')
+    end
     load(fullfile(parentDir,filename));
 end
 

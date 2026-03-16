@@ -6,13 +6,13 @@ clc; close all;
 clearvars -except QQ_u QQ_v QQ_w x y z valid Decimate; 
 
 % User parameters to be changed
-loadMat = 1; % Switch to load matfile if available (writes txt file)
+loadMat = 1; % Switch: Load existing matfile if available instead of running
+             % prediction again
 koopmanVec = 0:3; % Loop over different lifted functions
-retakePoint = 2;
+retakePoint = 1; % Measurement selection: 0: Wind field, 1: Wind at turbine, 2: Sparse data
 
 restoredefaultpath;
-addpath('./1.ASSESS_DATA','./2.DYNAMIC_MODE_DECOMPOSITION','./3.VALIDATION'); % ,'OTHER'
-% './4.DYNAMICAL_ANALYSIS','./5.REBUILD','./6.MODEL_PC',
+addpath('./1.ASSESS_DATA','./2.DYNAMIC_MODE_DECOMPOSITION','./3.VALIDATION'); 
 
 aPwd = pwd;
 addpath(genpath(fullfile(fileparts(aPwd),'data')))
@@ -37,8 +37,8 @@ pitchmode = 0;
 dirName={[ DataIn,'/yaw_control/steps_yaw_20deg_10offset']}; %directory for identification data, wake redirection control
 dirName_val={[ DataIn,'/yaw_control/steps_yaw_20deg_10offset_val']}; %directory for validation data, wake redirection control
 analysis ='YAW_MPC_offset_test'; %name of directory to be created to automatically store results
-filename ='yaw_control/U_data_complete_vec_yaw_off.mat'; %directory for matlab file with flow field identification data set
-filenamevalid ='yaw_control/U_data_complete_vec_yaw_off_val.mat'; %directory for matlab file with flow field validation data set
+filename = fullfile(DataIn,'yaw_control/U_data_complete_vec_yaw_off.mat'); %directory for matlab file with flow field identification data set
+filenamevalid = fullfile(DataIn,'yaw_control/U_data_complete_vec_yaw_off_val.mat'); %directory for matlab file with flow field validation data set
 
 % Parameters
 detrendingstates = 1; %1 to take mean flow and consider turbulent fluctuations
