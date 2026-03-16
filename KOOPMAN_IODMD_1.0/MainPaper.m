@@ -1,10 +1,12 @@
 %% Data handling
-clc; close all; clear;
-% clearvars -except QQ_u QQ_v QQ_w x y z valid Decimate; ToDo one of the
-% % variable is overwritten so this cannot be used
+clc; close all; 
+clearvars -except QQ_u QQ_v QQ_w x y z valid Decimate; 
+
+loadMat = 0; % Switch to load matfile if available
 
 restoredefaultpath;
-addpath('./1.ASSESS_DATA','./2.DYNAMIC_MODE_DECOMPOSITION','./3.VALIDATION','./4.DYNAMICAL_ANALYSIS','./5.REBUILD','./6.MODEL_PC','OTHER');
+addpath('./1.ASSESS_DATA','./2.DYNAMIC_MODE_DECOMPOSITION','./3.VALIDATION','OTHER');
+% './4.DYNAMICAL_ANALYSIS','./5.REBUILD','./6.MODEL_PC',
 addpath(genpath(fullfile(fileparts(pwd),'data')))
 p = genpath('Functions'); addpath(p)
 
@@ -12,7 +14,7 @@ maindir = [pwd,'/matlab_code_tests/']; %directory to save results
 codedir = mfilename('fullpath');
 parentdir = fileparts(fileparts(codedir));
 DataIn = fullfile(parentdir,'data');
-loadMat = 0;
+
 
 datOutputDir = 'datOutputDir'; % create output directory
 if exist(datOutputDir,'dir') ~= 7
@@ -37,13 +39,11 @@ elseif pitchmode == 1
 
 end
 
+% Parameters
 detrendingstates = 1; %1 to take mean flow and consider turbulent fluctuations
 method = 3; %0: DMD ; 1:DMDc; 2:IODMD; 3:EIODMD
-videos = 0; %generate videos
-snapshots = 0; %generate snapshots from simulation data
-koopmanVec = 0:3; %to add deterministic states to flow field data
-retakePoint = 2;
-r = 100;
+koopmanVec = 0:3;
+retakePoint = 1;
 
 % Turbine and flow characteristics to be used
 rho = 1.225; %air density in [kg m^-3]
@@ -51,118 +51,100 @@ D = 178; %Rotor Diameter used in simulations: 178 [m]
 dt = 2; %time sampling
 maindir = strcat(maindir,analysis);  %define main directory
 
-%% Load the data
-if exist('QQ_u','var') ~= 1 || length(QQ_u) ~= 96600
-    load(filename);
-    valid = load(filenamevalid);
-end
-
 itsf = 921; %instant to start from, as certain sample time.
 beg = (10001-itsf)/10; %instant to begin defined according to length of data
 
-% Read identification and validation data
-if exist('DataSetTurbineUsed.mat','file') == 2
-    load('DataSetTurbineUsed.mat','rotSpeed*','nacelleYaw*','time1*','rotorAzimuth*','pitch*','powerGenerator*');
-else
-    [rotSpeed, nacelleYaw, time1,rotorAzimuth,pitch,powerGenerator] = readdmdinformation(dirName); %read information from simulation
-    [rotSpeed_val, nacelleYaw_val,time1_val,rotorAzimuth_val,pitch_val,powerGenerator_val] = readdmdinformation(dirName_val); %read information from simulation
-    save('DataSetTurbineUsed.mat','rotSpeed*','nacelleYaw*','time1*','rotorAzimuth*','pitch*','powerGenerator*');
-end
-
-%% Retake points
-% Use not all grid points, but only a selection
-if retakePoint == 0
-
-    % Points between first and second turbine
-    strRetake = 'All wind meas.';
-    [~,~,~,~,~,~,QQ_u1] = retakepoints(QQ_u,x,y,z,Decimate);
-    [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_u1] = retakepoints(valid.QQ_u,x,y,z,Decimate);
-
-    [~,~,~,~,~,~,QQ_v1] = retakepoints(QQ_v,x,y,z,Decimate);
-    [~,~,~,~,~,~,QQ_w1] = retakepoints(QQ_w,x,y,z,Decimate);
-
-    [~,~,~,~,~,~,valid.QQ_v1] = retakepoints(valid.QQ_v,x,y,z,Decimate);
-    [~,~,~,~,~,~,valid.QQ_w1] = retakepoints(valid.QQ_w,x,y,z,Decimate);
-
-elseif retakePoint == 1
-
+if retakePoint == 1 ||  retakePoint == 4
     Xsel = [1,70];
     strRetake = 'Turbine wind meas.';
-    [~,~,~,~,~,~,QQ_u1] = retakepoints_at_turbine(QQ_u,x,y,z,Decimate,Xsel);
-    [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_u1] = retakepoints_at_turbine(valid.QQ_u,x,y,z,Decimate,Xsel);
-
-    [~,~,~,~,~,~,QQ_v1] = retakepoints_at_turbine(QQ_v,x,y,z,Decimate,Xsel);
-    [~,~,~,~,~,~,QQ_w1] = retakepoints_at_turbine(QQ_w,x,y,z,Decimate,Xsel);
-
-    [~,~,~,~,~,~,valid.QQ_v1] = retakepoints_at_turbine(valid.QQ_v,x,y,z,Decimate,Xsel);
-    [~,~,~,~,~,~,valid.QQ_w1] = retakepoints_at_turbine(valid.QQ_w,x,y,z,Decimate,Xsel);
-
 elseif retakePoint == 2
-
-    % wind at turbine hub height and in between turbines
     Xsel = [1,10,51,70];
-    strRetake = 'Sparse wind meas.'; %'Turbine wind meas.';
-    [~,~,~,~,~,~,QQ_u1] = retakepoints_at_turbine(QQ_u,x,y,z,Decimate,Xsel);
-    [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_u1] = retakepoints_at_turbine(valid.QQ_u,x,y,z,Decimate,Xsel);
-
-    [~,~,~,~,~,~,QQ_v1] = retakepoints_at_turbine(QQ_v,x,y,z,Decimate,Xsel);
-    [~,~,~,~,~,~,QQ_w1] = retakepoints_at_turbine(QQ_w,x,y,z,Decimate,Xsel);
-
-    [~,~,~,~,~,~,valid.QQ_v1] = retakepoints_at_turbine(valid.QQ_v,x,y,z,Decimate,Xsel);
-    [~,~,~,~,~,~,valid.QQ_w1] = retakepoints_at_turbine(valid.QQ_w,x,y,z,Decimate,Xsel);
-
+    strRetake = 'Sparse wind meas.';
+elseif retakePoint == 0
+    Xsel = []; % Default/Empty
+    strRetake = 'All wind meas.';
 else
-    %for not using all grid points and only part of them (example,
-    %only between first and second turbine)
-    [~,~,~,~,~,~,QQ_u1] = retakepoints_at_turbinedisk(QQ_u,x,y,z,Decimate);
-    [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_u1] = retakepoints_at_turbinedisk(valid.QQ_u,x,y,z,Decimate);
-
-    [~,~,~,~,~,~,QQ_v1] = retakepoints_at_turbinedisk(QQ_v,x,y,z,Decimate);
-    [~,~,~,~,~,~,QQ_w1] = retakepoints_at_turbine(QQ_w,x,y,z,Decimate);
-
-    [~,~,~,~,~,~,valid.QQ_v1] = retakepoints_at_turbinedisk(valid.QQ_v,x,y,z,Decimate);
-    [~,~,~,~,~,~,valid.QQ_w1] = retakepoints_at_turbinedisk(valid.QQ_w,x,y,z,Decimate);
+    error('strRetake not defined')
 end
 
-%% Concatenate and detrend flow fields/states if desired
-
-% Define states to be used for DMD
-%states=QQ_u1(:,(begin-beg)+1:end); % define states: first hypothesis
-states_u = QQ_u1(:,(itsf-1)*0.1:end); %fluid flow as states, identification data set
-states_v = QQ_v1(:,(itsf-1)*0.1:end); states_w = QQ_w1(:,(itsf-1)*0.1:end);
-states0 = [states_u; states_v; states_w];
-statesvalid_u = valid.QQ_u1(:,(itsf-1)*0.1:end); %fluid flow as states, validation data set for comparison
-statesvalid_v = valid.QQ_v1(:,(itsf-1)*0.1:end); %fluid flow as states, identification data set
-statesvalid_w = valid.QQ_v1(:,(itsf-1)*0.1:end);
-statesvalid0 = [statesvalid_u; statesvalid_v; statesvalid_w];
-
-if detrendingstates == 1
-    [states1all,meansteadystate,scalingfactor] = preprocessstates(states0); % Devide by standard variation
-    [statesvalid1all]=preprocessstates(statesvalid0,scalingfactor);
-else
-    states1all = states0;
-    statesvalid1 = statesvalid0;
-end
-
-%% (2) DYNAMIC MODE DECOMPOSITION
-
-% Process validation data
-[Inputs, Outputs, Deterministic,scalingfactors,meanvalues] = preprocessdmdid(beg, rotSpeed,time1,rotorAzimuth,nacelleYaw, pitchmode,pitch,powerGenerator,rho); %preprocess information (resample, and maintain only relevant data)
-[Inputs_val, Outputs_val, Deterministic_val] = preprocessdmdval(beg, rotSpeed_val,time1_val,rotorAzimuth_val,nacelleYaw_val,pitchmode,pitch_val,scalingfactors,powerGenerator_val,rho,meanvalues); %preprocess information (resample and only relevant data)
-
-%% Start loop over
+% Create
 aMatFilename = sprintf('simAll%d_plotStruct.mat',retakePoint);
-
 if retakePoint > 0
     endmat = ['_long',num2str(Xsel(end)),'.mat'];
     aMatFilename  = strrep(aMatFilename,'.mat', endmat);
 end
-
 aMatFullfilename = fullfile(datOutputDir,aMatFilename);
+
+%% Load the data
 
 if exist(aMatFullfilename,'file') == 2 && loadMat == 1
     load(aMatFullfilename,'plotStruct');
 else
+
+    % Load wind data (needs 5.507 s, only once)
+    if exist('QQ_u','var') ~= 1 || length(QQ_u) ~= 96600
+        load(filename, 'QQ_u', 'QQ_v', 'QQ_w', 'x','y', 'z', 'Decimate');
+        valid = load(filenamevalid);
+    end
+
+    % Read or load identification and validation turbine data (needs 0.008 s)
+    if exist('DataSetTurbineUsed.mat','file') == 2
+        load('DataSetTurbineUsed.mat','rotSpeed*','nacelleYaw*','time1*','rotorAzimuth*','pitch*','powerGenerator*');
+    else
+        [rotSpeed, nacelleYaw, time1,rotorAzimuth,pitch,powerGenerator] = readdmdinformation(dirName); %read information from simulation
+        [rotSpeed_val, nacelleYaw_val,time1_val,rotorAzimuth_val,pitch_val,powerGenerator_val] = readdmdinformation(dirName_val); %read information from simulation
+        save('DataSetTurbineUsed.mat','rotSpeed*','nacelleYaw*','time1*','rotorAzimuth*','pitch*','powerGenerator*');
+    end
+
+    %% Retake points
+    % Use not all grid points, but only a selection
+    if isempty(Xsel)
+        [~,~,~,~,~,~,QQ_u1] = retakepoints(QQ_u,x,y,z,Decimate);
+        [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_u1] = retakepoints(valid.QQ_u,x,y,z,Decimate);
+
+        [~,~,~,~,~,~,QQ_v1] = retakepoints(QQ_v,x,y,z,Decimate);
+        [~,~,~,~,~,~,QQ_w1] = retakepoints(QQ_w,x,y,z,Decimate);
+
+        [~,~,~,~,~,~,valid.QQ_v1] = retakepoints(valid.QQ_v,x,y,z,Decimate);
+        [~,~,~,~,~,~,valid.QQ_w1] = retakepoints(valid.QQ_w,x,y,z,Decimate);
+
+    else
+        [~,~,~,~,~,~,QQ_u1] = retakepoints_at_turbine(QQ_u,x,y,z,Decimate,Xsel);
+        [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_u1] = retakepoints_at_turbine(valid.QQ_u,x,y,z,Decimate,Xsel);
+
+        [~,~,~,~,~,~,QQ_v1] = retakepoints_at_turbine(QQ_v,x,y,z,Decimate,Xsel);
+        [~,~,~,~,~,~,QQ_w1] = retakepoints_at_turbine(QQ_w,x,y,z,Decimate,Xsel);
+
+        [~,~,~,~,~,~,valid.QQ_v1] = retakepoints_at_turbine(valid.QQ_v,x,y,z,Decimate,Xsel);
+        [~,~,~,~,~,~,valid.QQ_w1] = retakepoints_at_turbine(valid.QQ_w,x,y,z,Decimate,Xsel);
+
+    end
+
+    %% Concatenate and detrend flow fields/states if desired
+
+    % Define states to be used for DMD
+    states_u = QQ_u1(:,(itsf-1)*0.1:end); %fluid flow as states, identification data set
+    states_v = QQ_v1(:,(itsf-1)*0.1:end);
+    states_w = QQ_w1(:,(itsf-1)*0.1:end);
+    states0 = [states_u; states_v; states_w];
+    statesvalid_u = valid.QQ_u1(:,(itsf-1)*0.1:end); %fluid flow as states, validation data set for comparison
+    statesvalid_v = valid.QQ_v1(:,(itsf-1)*0.1:end); %fluid flow as states, identification data set
+    statesvalid_w = valid.QQ_w1(:,(itsf-1)*0.1:end);
+    statesvalid0 = [statesvalid_u; statesvalid_v; statesvalid_w];
+
+    if detrendingstates == 1
+        [states1all,meansteadystate,scalingfactor] = preprocessstates(states0); % Devide by standard variation
+        [statesvalid1all]=preprocessstates(statesvalid0,scalingfactor);
+    else
+        states1all = states0;
+        statesvalid1 = statesvalid0;
+    end
+
+    %% Preprocess wind and turbine data
+    [Inputs, Outputs, Deterministic,scalingfactors,meanvalues] = preprocessdmdid(beg, rotSpeed,time1,rotorAzimuth,nacelleYaw, pitchmode,pitch,powerGenerator,rho); %preprocess information (resample, and maintain only relevant data)
+    [Inputs_val, Outputs_val, Deterministic_val] = preprocessdmdval(beg, rotSpeed_val,time1_val,rotorAzimuth_val,nacelleYaw_val,pitchmode,pitch_val,scalingfactors,powerGenerator_val,rho,meanvalues); %preprocess information (resample and only relevant data)
+
+    %% (2) DYNAMIC MODE DECOMPOSITION
 
     noStateUV = 1/3 * size(states1all,1); %u and v selected
     states1 = states1all(1:noStateUV,:);
@@ -170,9 +152,7 @@ else
 
     for idx = 1: length(koopmanVec)
         koopman = koopmanVec(idx);
-
         r = 100;
-      
 
         %include non linear observables - Koopman extensions to better recover non linear dynamics
         if koopman == 0
@@ -190,7 +170,6 @@ else
             states= [states1; states1.^3];
             statesvalid = [statesvalid1; statesvalid1.^3];
             strKoop = 'Lin. + cubic';
-
 
         elseif koopman == 3 % linear + quadratic + cubic
             states= [states1; states1.^2; states1.^3]; %[states_u; states_u.^2; statesvalid_u.^3];
@@ -235,13 +214,13 @@ else
         [sys_red,FITje,U,S,V,method,X,X_p,Xd,dirdmd,xstates]=dynamicmodedecomposition(states,Inputs, Outputs, Deterministic,method,r,maindir,f,dt,plotView,plotOn);
         % save(strcat(dirdmd,'/OPTIONS.mat'),'detrendingstates','method','koopman','rho','D','dt','dirName','dirName_val');
 
-   
+
         %% (3) DATA VALIDATION
         % Validate Models from validation data set
         [FITje_val,dirdmd_val,xstatesvalid] = validatemodels(sys_red,Inputs_val,Outputs_val,r,strcat(dirdmd, '/val'),f,statesvalid,U,Deterministic_val,method,plotView,plotOn);
         % save(strcat(dirdmd,'/FIT.mat'),'FITje_val','FITje');
 
-        % 
+        %
         [a,b] = max(FITje_val(2,1:r)); %best performing model, only analysing first 50
         [a1,b1] = max(FITje_val(1,1:r)); %#ok<ASGLU> Might be used at some point
         [aId,b1] = max(FITje(2,1:r)); %#ok<ASGLU> %best performing model, only analysing first 50
@@ -249,13 +228,13 @@ else
 
         fprintf('Best performance T2, T1: %2.3f, %2.3f, model states %d\n', a, FITje_val(1,b),b);
 
-        purpose = ''; x = '';
+        purpose = ''; xStr = '';
         OMEGA = ''; DAMPING = '';
         plotView = 0; plotOn =0;
         %sys_red,si,Inputs, Outputs,FITje,OMEGA,DAMPING,purpose,x,states,U,Deterministic,method
-        [~,~,~,~,~,ysim_val] = evaluatemodel(sys_red,b,Inputs_val,Outputs_val,FITje_val,OMEGA,DAMPING,purpose,x,statesvalid,U,Deterministic_val,method,plotView,plotOn);
+        [~,~,~,~,~,ysim_val] = evaluatemodel(sys_red,b,Inputs_val,Outputs_val,FITje_val,OMEGA,DAMPING,purpose,xStr,statesvalid,U,Deterministic_val,method,plotView,plotOn);
         %plot(Outputs(1,1:end-1) + Outputs(2,1:end-1)) ; hold on; plot(ysim_val(:,1) + ysim_val(:,2));
-        [~,~,~,~,~,ysim] = evaluatemodel(sys_red,b,Inputs_val,Outputs,FITje,OMEGA,DAMPING,purpose,x,...
+        [~,~,~,~,~,ysim] = evaluatemodel(sys_red,b,Inputs_val,Outputs,FITje,OMEGA,DAMPING,purpose,xStr,...
             states,U,Deterministic,method,plotView,plotOn);
 
         plotStruct{idx}.Outputs_val = Outputs_val; %#ok<*SAGROW>
@@ -324,7 +303,7 @@ fprintf('Printed to txt file: %s\n',aTextFile)
 % freq=1/dt;
 % lpf=ss(freq, 1,freq,0,2);
 % sys_red_fil=series(lpf, sys_red{modeltouse});
-% 
+%
 % mpcmodel = sys_red_fil;
 % Hp = 600;
 % Hc = 600;
@@ -334,9 +313,9 @@ fprintf('Printed to txt file: %s\n',aTextFile)
 % qq = 1000;
 % rr = 0.01;
 % tic; [u,predictedpower,Pref]=power_referencetracking(mpcmodel,Hp,Hc,Inputs,Outputs,scalingfactors,dirdmd,qq,rr); toc
-% 
-% 
-% 
+%
+%
+%
 % % t = 1:dt:length(plotStruct{idx}.Outputs_val)*dt;
 % %
 % % fs = 12;
@@ -346,5 +325,5 @@ fprintf('Printed to txt file: %s\n',aTextFile)
 % %   xlabel('Time (s)','FontSize',fs)
 % %   ylabel(' \delta Power (MW)','FontSize',fs)
 % % legend('Real',plotStruct{idx}.legStr,'Location','northoutside')
-% 
-% 
+%
+%

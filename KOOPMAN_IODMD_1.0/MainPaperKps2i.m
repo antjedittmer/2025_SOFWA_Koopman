@@ -1,4 +1,3 @@
-
 %% Data handling
 clc; close all; clear;
 
