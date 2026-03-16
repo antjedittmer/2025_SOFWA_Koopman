@@ -11,6 +11,8 @@ The *runGetVAFforDiffPos.m* script does a grid search for finding the
 longitudinal position with the best variance-accounted for using the
 function *getVAFforDifferentPositions.m*.
 
+
+
 The main functionalities of the *MainPaper.m* and *MainPaperKpsi.m* are:
 
 ## 0/1. Initialise/Assess data

@@ -1,12 +1,12 @@
-%% Main file to reproduce the part of the results in Table 
-
+%% File to reproduce the results in Table 2 (Wind field, sparse wind 
+% data, wind at turbines)
 
 %% Set parameters, path to files 
 clc; close all; 
 clearvars -except QQ_u QQ_v QQ_w x y z valid Decimate; 
 
 % User parameters to be changed
-loadMat = 1; % Switch to load matfile if available
+loadMat = 1; % Switch to load matfile if available (writes txt file)
 koopmanVec = 0:3; % Loop over different lifted functions
 retakePoint = 2;
 

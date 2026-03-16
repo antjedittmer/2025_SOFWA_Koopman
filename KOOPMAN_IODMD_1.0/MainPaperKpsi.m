@@ -1,6 +1,7 @@
 %% Data handling
 clc; close all; clear;
 
+aPwd = pwd;
 restoredefaultpath;
 addpath('./1.ASSESS_DATA','./2.DYNAMIC_MODE_DECOMPOSITION','./3.VALIDATION'); %'./4.DYNAMICAL_ANALYSIS','./5.REBUILD','./6.MODEL_PC','OTHER');
 addpath(genpath(fullfile(fileparts(pwd),'data')))
@@ -23,13 +24,17 @@ if exist(datOutputDir,'dir') ~= 7
     mkdir(datOutputDir);
 end
 
+DataInOut = fullfile(aPwd,'datInOutDir'); % directory for results that are generated once
+if exist(DataInOut,'dir') ~= 7
+    mkdir(DataInOut);
+end
+
 detrendingstates = 1; %1 to take mean flow and consider turbulent fluctuations
 method = 3; %0: DMD ; 1:DMDc; 2:IODMD; 3:EIODMD
 videos = 0; %generate videos
 snapshots = 0; %generate snapshots from simulation data
 koopmanVec = 3; %to add deterministic states to flow field data
 retakePoint = 1;
-r = 100;
 
 % Turbine and flow characteristics to be used
 rho = 1.225; %air density in [kg m^-3]
@@ -37,30 +42,47 @@ D = 178; %Rotor Diameter used in simulations: 178 [m]
 dt = 2; %time sampling
 maindir = strcat(maindir,analysis);  %define main directory
 
+if retakePoint == 1 ||  retakePoint == 4
+    Xsel = [1,70];
+    strRetake = 'Turbine wind meas.';
+elseif retakePoint == 2
+    Xsel = [1,10,51,70];
+    strRetake = 'Sparse wind meas.';
+elseif retakePoint == 0
+    Xsel = []; % Default/Empty
+    strRetake = 'All wind meas.';
+else
+    error('strRetake not defined')
+end
+
+PolyLiftingFunction = 0;
+noStates = [4,6,12,24];
+
+aMatFilename = sprintf('simAll%d_plotStruct_resampledOriginal_Kpsi%d.mat',retakePoint,noStates(end));
+aMatFullfilename = fullfile(datOutputDir,aMatFilename);
+
+
 %% Load the data
 load(filename);
 valid = load(filenamevalid);
 
 itsf = 921; %instant to start from, as certain sample time.
 beg = (10001-itsf)/10; %instant to begin defined according to length of data
-%begin=750;
-%beg=750;
 
-% Read identification and validation data
-if exist('DataSetTurbineUsed.mat','file') == 2
-    load('DataSetTurbineUsed.mat','rotSpeed*','nacelleYaw*','time1*','rotorAzimuth*','pitch*','powerGenerator*');
-else
-    [rotSpeed, nacelleYaw, time1,rotorAzimuth,pitch,powerGenerator] = readdmdinformation(dirName); %read information from simulation
-    [rotSpeed_val, nacelleYaw_val,time1_val,rotorAzimuth_val,pitch_val,powerGenerator_val] = readdmdinformation(dirName_val); %read information from simulation
-    save('DataSetTurbineUsed.mat','rotSpeed*','nacelleYaw*','time1*','rotorAzimuth*','pitch*','powerGenerator*');
-end
+    % Read or load identification and validation turbine data (needs 0.008 s)
+    if exist(fullfile(DataInOut,'DataSetTurbineUsed.mat'),'file') == 2
+        load(fullfile(DataInOut,'DataSetTurbineUsed.mat'),'rotSpeed*','nacelleYaw*','time1*','rotorAzimuth*','pitch*','powerGenerator*');
+    else
+        [rotSpeed, nacelleYaw, time1,rotorAzimuth,pitch,powerGenerator] = readdmdinformation(dirName); %read information from simulation
+        [rotSpeed_val, nacelleYaw_val,time1_val,rotorAzimuth_val,pitch_val,powerGenerator_val] = readdmdinformation(dirName_val); %read information from simulation
+        save(fullfile(DataInOut,'DataSetTurbineUsed.mat'),'rotSpeed*','nacelleYaw*','time1*','rotorAzimuth*','pitch*','powerGenerator*');
+        cd(aPwd); % to change back to this directory
+    end
+
 
 %% Retake points
 
-if retakePoint == 0
-
-    %for not using all grid points and only part of them (example,
-    %only between first and second turbine)
+if isempty(Xsel)
     [~,~,~,~,~,~,QQ_u1] = retakepoints(QQ_u,x,y,z,Decimate);
     [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_u1] = retakepoints(valid.QQ_u,x,y,z,Decimate);
 
@@ -70,29 +92,16 @@ if retakePoint == 0
     [~,~,~,~,~,~,valid.QQ_v1] = retakepoints(valid.QQ_v,x,y,z,Decimate);
     [~,~,~,~,~,~,valid.QQ_w1] = retakepoints(valid.QQ_w,x,y,z,Decimate);
 
-elseif retakePoint == 1
-
-    %for not using all grid points and only part of them (example,
-    %only between first and second turbine)
-    [~,~,~,~,~,~,QQ_u1] = retakepoints_at_turbine(QQ_u,x,y,z,Decimate);
-    [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_u1] = retakepoints_at_turbine(valid.QQ_u,x,y,z,Decimate);
-
-    [~,~,~,~,~,~,QQ_v1] = retakepoints_at_turbine(QQ_v,x,y,z,Decimate);
-    [~,~,~,~,~,~,QQ_w1] = retakepoints_at_turbine(QQ_w,x,y,z,Decimate);
-
-    [~,~,~,~,~,~,valid.QQ_v1] = retakepoints_at_turbine(valid.QQ_v,x,y,z,Decimate);
-    [~,~,~,~,~,~,valid.QQ_w1] = retakepoints_at_turbine(valid.QQ_w,x,y,z,Decimate);
 else
-    %for not using all grid points and only part of them (example,
-    %only between first and second turbine)
-    [~,~,~,~,~,~,QQ_u1] = retakepoints_at_turbinedisk(QQ_u,x,y,z,Decimate);
-    [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_u1] = retakepoints_at_turbinedisk(valid.QQ_u,x,y,z,Decimate);
+    [~,~,~,~,~,~,QQ_u1] = retakepoints_at_turbine(QQ_u,x,y,z,Decimate,Xsel);
+    [xxx,yyy,zzz,XX,YY,ZZ,valid.QQ_u1] = retakepoints_at_turbine(valid.QQ_u,x,y,z,Decimate,Xsel);
 
-    [~,~,~,~,~,~,QQ_v1] = retakepoints_at_turbinedisk(QQ_v,x,y,z,Decimate);
-    [~,~,~,~,~,~,QQ_w1] = retakepoints_at_turbine(QQ_w,x,y,z,Decimate);
+    [~,~,~,~,~,~,QQ_v1] = retakepoints_at_turbine(QQ_v,x,y,z,Decimate,Xsel);
+    [~,~,~,~,~,~,QQ_w1] = retakepoints_at_turbine(QQ_w,x,y,z,Decimate,Xsel);
 
-    [~,~,~,~,~,~,valid.QQ_v1] = retakepoints_at_turbinedisk(valid.QQ_v,x,y,z,Decimate);
-    [~,~,~,~,~,~,valid.QQ_w1] = retakepoints_at_turbinedisk(valid.QQ_w,x,y,z,Decimate);
+    [~,~,~,~,~,~,valid.QQ_v1] = retakepoints_at_turbine(valid.QQ_v,x,y,z,Decimate,Xsel);
+    [~,~,~,~,~,~,valid.QQ_w1] = retakepoints_at_turbine(valid.QQ_w,x,y,z,Decimate,Xsel);
+
 end
 
 %% Concatenate and detrend flow fields/states if desired
@@ -104,7 +113,7 @@ states_v = QQ_v1(:,(itsf-1)*0.1:end); states_w = QQ_w1(:,(itsf-1)*0.1:end);
 states0 = [states_u; states_v; states_w];
 statesvalid_u = valid.QQ_u1(:,(itsf-1)*0.1:end); %fluid flow as states, validaiton data set for comparison
 statesvalid_v = valid.QQ_v1(:,(itsf-1)*0.1:end); %fluid flow as states, identification data set
-statesvalid_w = valid.QQ_v1(:,(itsf-1)*0.1:end);
+statesvalid_w = valid.QQ_w1(:,(itsf-1)*0.1:end);
 statesvalid0 = [statesvalid_u; statesvalid_v; statesvalid_w];
 
 if detrendingstates == 1
@@ -121,12 +130,6 @@ end
 
 %% (2) DYNAMIC MODE DECOMPOSITION
 
-if retakePoint == 0
-    strRetake = 'All wind meas.';
-else
-    strRetake = 'Turbine wind meas.';
-end
-
 %% Start loop over
 % states1 = Deterministic;
 % statesvalid1 = Deterministic_val;
@@ -134,13 +137,6 @@ end
 noStateUV = 1/3 * size(states1all,1); %u and v selected
 states1 = states1all(1:noStateUV,:);
 statesvalid1 = statesvalid1all(1:noStateUV,:);
-
-
-PolyLiftingFunction = 0;
-noStates = [4,6,12,24];
-
-aMatFilename = sprintf('simAll%d_plotStruct_resampledOriginal_Kpsi%d.mat',retakePoint,noStates(end));
-aMatFullfilename = fullfile(datOutputDir,aMatFilename);
 
 
 for idx = 1: length(noStates)
@@ -198,15 +194,9 @@ for idx = 1: length(noStates)
     f = '';
     plotView = 0; plotOn = 0;
     [sys_red,FITje,U,S,V,method,X,X_p,Xd,dirdmd,xstates]=dynamicmodedecomposition(states,Inputs, Outputs, Deterministic,method,r,maindir,f,dt,plotView,plotOn);
-    save(strcat(dirdmd,'/OPTIONS.mat'),'detrendingstates','method','koopman','rho','D','dt','dirName','dirName_val');
+    %save(strcat(dirdmd,'/OPTIONS.mat'),'detrendingstates','method','koopman','rho','D','dt','dirName','dirName_val');
 
-    % plotView = 1; plotOn = 1;
-    % si = 7;
-    % purpose = ''; x = '';
-    % OMEGA = ''; DAMPING = '';
-    % [FITje,OMEGA,DAMPING,fig1,x]=evaluatemodel(sys_red,si,Inputs, Outputs,FITje,OMEGA,DAMPING,purpose,x,states,U,Deterministic,method,plotView,plotOn)
-
-    %% (3) DATA VALIDATION
+      %% (3) DATA VALIDATION
     % Validate Models from validation data set
     [FITje_val,dirdmd_val,xstatesvalid] = validatemodels(sys_red,Inputs_val,Outputs_val,r,strcat(dirdmd, '/val'),f,statesvalid,U,Deterministic_val,method,plotView,plotOn);
     save(strcat(dirdmd,'/FIT.mat'),'FITje_val','FITje');
@@ -219,13 +209,13 @@ for idx = 1: length(noStates)
 
     fprintf('Best performance T2, T1: %2.3f, %2.3f, model states %d\n', a, FITje_val(1,b),b);
 
-    purpose = ''; x = '';
+    purpose = ''; xStr = '';
     OMEGA = ''; DAMPING = '';
     plotView = 0; plotOn =0;
     %sys_red,si,Inputs, Outputs,FITje,OMEGA,DAMPING,purpose,x,states,U,Deterministic,method
-    [~,~,~,~,~,ysim_val] = evaluatemodel(sys_red,b,Inputs_val,Outputs_val,FITje_val,OMEGA,DAMPING,purpose,x,statesvalid,U,Deterministic_val,method,plotView,plotOn);
+    [~,~,~,~,~,ysim_val] = evaluatemodel(sys_red,b,Inputs_val,Outputs_val,FITje_val,OMEGA,DAMPING,purpose,xStr,statesvalid,U,Deterministic_val,method,plotView,plotOn);
     %plot(Outputs(1,1:end-1) + Outputs(2,1:end-1)) ; hold on; plot(ysim_val(:,1) + ysim_val(:,2));
-    [~,~,~,~,~,ysim] = evaluatemodel(sys_red,b,Inputs_val,Outputs,FITje,OMEGA,DAMPING,purpose,x,...
+    [~,~,~,~,~,ysim] = evaluatemodel(sys_red,b,Inputs_val,Outputs,FITje,OMEGA,DAMPING,purpose,xStr,...
         states,U,Deterministic,method,plotView,plotOn);
 
     plotStruct{idx}.Outputs_val = Outputs_val;
