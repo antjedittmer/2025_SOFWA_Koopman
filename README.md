@@ -1,4 +1,4 @@
-# 2025_SOFWA_Koopman
+# 2025_SOWFA_Koopman
 
 ## General
 
@@ -9,16 +9,16 @@ submitted to Torque 2026.
 
 It may be used to recreate the simulation results and figures from the paper. 
 
-The paper and the code is based on the work by **Nassir Cassamo** on Koopman-based modeling for wind farm control. The SOWFA datasets and initial identification frameworks used in this study are derived from his previous research and repositories:
+The paper and the code is based on the work by **Nassir Cassamo** on Koopman-based modeling for wind farm control. The SOWFA (Simulator for Wind Farm Applications) datasets and initial identification frameworks used in this study are derived from his previous research and repositories:
 
 * **Cassamo's Repository:** [Cassamo/Koopman_MPC_WindFarm](https://github.com/nassircassamo/IODMD_SOWFA)
 * **Related Publications:** [Cassamo et al. (2020)](https://doi.org/10.3390/en13246513) and [Cassamo et al. (2021)](https://ieeexplore.ieee.org/document/9482631)
 
-The code needs the SOFWA data provided in [Cassamo's Google Drive] (https://drive.google.com/drive/folders/1_X4Aibg2-OM4qSwOxZ1yCTXlL-vTQPrn?usp=sharing)
+The code needs the data provided in [Cassamo's Google Drive] (https://drive.google.com/drive/folders/1_X4Aibg2-OM4qSwOxZ1yCTXlL-vTQPrn?usp=sharing)
 to run. See [Cassamo/Koopman_MPC_WindFarm](https://github.com/nassircassamo/IODMD_SOWFA) for further details.
 
 ## Overview
-This study evaluates Koopman-based power prediction for wind farms using SOWFA (Simulator for Wind Farm Applications) data under varied sensor position constraints. It investigates how sparse measurement configurations impact prediction fidelity and how physically motivated Koopman lifting functions (such as quadratic and cubic rotor speeds) can recover accuracy when spatial wind data is scarce.
+This study evaluates Koopman-based power prediction for wind farms using SOWFA data under varied sensor position constraints. It investigates how sparse data configurations impact prediction fidelity and how physically motivated Koopman lifting functions (such as quadratic and cubic rotor speeds) can recover accuracy when spatial wind data is scarce.
 
 The provided code compares:
 1. **Wind Field Models:** Based on high-resolution 51,543-point grids.
