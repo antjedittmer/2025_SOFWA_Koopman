@@ -32,7 +32,7 @@ t0 = 0:dT: length(simPwrRef)*dT;
 figure('Name','AllResults','NumberTitle','off');
 pos0 = get(0,'defaultFigurePosition');
 set(gcf,"Position",[pos0(1), pos0(2)- 0.5*pos0(4), pos0(3),1*pos0(4)])
-tiledlayout(7, 1, 'TileSpacing', 'compact', 'Padding', 'compact');
+tiledlayout(5, 1, 'TileSpacing', 'compact', 'Padding', 'compact');
 
 fs = 12; % font size for all plots
 
@@ -76,83 +76,6 @@ visualizeVAFsub(2,plotStruct_WT0,matFile1_WT,scalingfactors,meanvalues,cl_WT,cl1
 xticklabels([]); % Removes X-axis labels to save space
 
 
-%% --- Subplot 4: Power comparison PT1(Simulated vs Reference) ---
-nexttile([2 1]);
-cl = lines;
-plot(t, simPwrRef,'Color',cl(1,:),'LineWidth',1.5); hold on;
-
-cl1 = 0*[1,1,1]; %{[0,0,1]; [0,0.6,0]; [0,0.6,0]};
-ls = {'-','--','-.',':'};
-vec = [1,2,4];
-RMSEvec = nan(6,1);
-leg{1} = 'Simulated Power';
-
-lwVec =[1*ones(2,1); 1.5*ones(3,1)]; % line width
-for sidx = 1
-    idx = vec(sidx);
-    lw = lwVec(sidx);
-    simPwr1 = plotStruct{idx}.ysim_val(1:end,1) * scalingfactors(1) + meanvalues(1);
-    simPwr2 = plotStruct{idx}.ysim_val(1:end,2) * scalingfactors(2) + meanvalues(2);
-    simPwr = (simPwr1 + simPwr2)/10^6;
-    RMSEvec(sidx) = sqrt(mean((simPwr - simPwrRef').^2));
-    plot(t,simPwr,'Color',cl1,'LineStyle',ls{3},'LineWidth',lw+0.5);
-    leg{end+1} = strrep(strrep(plotStruct{idx}.legStr2,':',': '), 'VAF P(T2)', 'VAF(P_2)'); %#ok<SAGROW>
-end
-
-load(matFile1,'plotStruct');
-cl2 = {[1,0,0]; [0,0,0]; [1,0,1]};
-vec = [1,2,length(plotStruct)];
-
-lwVec =[1*ones(2,1); 1.5*ones(3,1)]; % line width
-for sidx = 3
-    idx = vec(sidx);
-    lw = lwVec(sidx);
-    simPwr1 = plotStruct{idx}.ysim_val(1:end,1) * scalingfactors(1) + meanvalues(1);
-    simPwr2 = plotStruct{idx}.ysim_val(1:end,2) * scalingfactors(2) + meanvalues(2);
-    simPwr = (simPwr1 + simPwr2)/10^6;
-    RMSEvec(sidx+3) = sqrt(mean((simPwr - simPwrRef').^2));
-    plot(t, simPwr,'Color', [0,0.9,0], 'LineStyle',ls{sidx}, 'LineWidth',lw);
-    leg{end+1} = strrep(strrep(strrep(strrep(strrep(plotStruct{idx}.legStr2,':',': '),'meas.',''),...
-        'wind ','wind'),'VAF P(T2)', 'VAF(P_2)'),'n_{koop}','n_{g{\omega}}'); %#ok<SAGROW>
-end
-
-load(matFile0_WT,'plotStruct');
-cl2 = {[1,0,0]; [0,0,0]; [1,0,1]};
-vec = [1,2,length(plotStruct)];
-
-lwVec =[1*ones(2,1); 1.5*ones(3,1)]; % line width
-for sidx = 1
-    idx = vec(sidx);
-    lw = lwVec(3);
-    simPwr1 = plotStruct{idx}.ysim_val(1:end,1) * scalingfactors(1) + meanvalues(1);
-    simPwr2 = plotStruct{idx}.ysim_val(1:end,2) * scalingfactors(2) + meanvalues(2);
-    simPwr = (simPwr1 + simPwr2)/10^6;
-    RMSEvec(sidx+3) = sqrt(mean((simPwr - simPwrRef').^2));
-    plot(t, simPwr,'r', 'LineStyle',ls{3}, 'LineWidth',lw);
-    leg{end+1} = strrep(strrep(strrep(strrep(strrep(plotStruct{idx}.legStr2,':',': '),'meas.',''),...
-        'wind ','wind'),'VAF P(T2)', 'VAF(P_2)'),'n_{koop}','n_{g{\omega}}'); %#ok<SAGROW>
-end
-
-load(matFile1_WT,'plotStruct');
-cl2 = {[1,0,0]; [0,0,0]; [1,0,1]};
-vec = [1,2,length(plotStruct)];
-
-lwVec =[1*ones(2,1); 1.5*ones(3,1)]; % line width
-for sidx = 3
-    idx = vec(sidx);
-    lw = lwVec(sidx);
-    simPwr1 = plotStruct{idx}.ysim_val(1:end,1) * scalingfactors(1) + meanvalues(1);
-    simPwr2 = plotStruct{idx}.ysim_val(1:end,2) * scalingfactors(2) + meanvalues(2);
-    simPwr = (simPwr1 + simPwr2)/10^6;
-    RMSEvec(sidx+3) = sqrt(mean((simPwr - simPwrRef').^2));
-    plot(t, simPwr,'m', 'LineStyle',ls{2}, 'LineWidth',lw);
-    leg{end+1} = strrep(strrep(strrep(strrep(strrep(plotStruct{idx}.legStr2,':',': '),'meas.',''),...
-        'wind ','wind'),'VAF P(T2)', 'VAF(P_2)'),'n_{koop}','n_{g{\omega}}'); %#ok<SAGROW>
-end
-
-
-
-axis tight; grid on;
 
 % % 1) Remove the numeric value and % after 'VAF(P_2):'
 % leg_clean = regexprep(leg, '(VAF\(P_2\):)\s*[0-9.]+%', '$1');
